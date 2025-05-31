@@ -13,6 +13,21 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+html, body {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box; /* Good practice for consistent box model */
+}
+
+body.light {
+  background-color: white;
+  color: black;
+}
+body.dark {
+  background-color: #121212;
+  color: white;
+}
+
 
 a {
   font-weight: 500;
@@ -29,6 +44,8 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
+  
 }
 
 /* h1 {
