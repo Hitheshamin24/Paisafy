@@ -1,57 +1,21 @@
 import { Link } from "react-router-dom";
+
 import laptopImage from "../assets/laptop.jpeg";
-import Navbar from "../components/Navbar"; // Keep Navbar import even if not animated here
-import { motion } from "framer-motion"; // Import motion
+import Navbar from "../components/Navbar";
 
 const Home = () => {
-  // Variants for the left column (text content)
-  const textVariants = {
-    hidden: { opacity: 0, x: -50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut" } },
-  };
-
-  // Variants for the image (right column)
-  const imageVariants = {
-    hidden: { opacity: 0, x: 50 },
-    visible: { opacity: 1, x: 0, transition: { duration: 0.8, ease: "easeOut", delay: 0.3 } }, // Add a slight delay
-  };
-
-  // Variants for the feature icons container (for staggering)
-  const featureContainerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.15, // Stagger each feature icon
-        delayChildren: 0.6,    // Delay start of icon animations
-      },
-    },
-  };
-
-  // Variants for individual feature icons
-  const featureItemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.4 } },
-  };
-
-
   return (
-    <div className="bg-gray-950 text-white min-h-screen w-screen flex items-center justify-center overflow-x-hidden">
-      {/* Navbar is rendered here, but its animation is handled within Navbar.jsx */}
-      <Navbar /> 
-
+    <div className="bg-gray-950 text-white min-h-screen w-screen flex items-center justify-center overflow-x-hidden ">
       {/* Container for the whole hero section */}
       <div className="mt-7 container mx-auto px-4 py-16 md:py-24 max-w-7xl">
+        {" "}
+        {/* Added max-w-7xl here for content */}
         {/* Flex container for the two-column layout */}
         <div className="flex flex-col md:flex-row items-center justify-between md:gap-12">
+          {" "}
+          {/* Added md:gap-12 for spacing */}
           {/* Left Column: Text Content */}
-          <motion.div
-            className="w-full md:w-1/2 text-center md:text-left mb-12 md:mb-0"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{once:true,amount:0.5}}
-            variants={textVariants} // Apply text animation variants
-          >
+          <div className="w-full md:w-1/2 text-center md:text-left mb-12 md:mb-0">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
               Invest Smarter with{" "}
               <span className="text-blue-400">AI-Powered</span> Recommendations
@@ -63,31 +27,20 @@ const Home = () => {
             </p>
             <div className="flex justify-center md:justify-start space-x-4">
               <Link to="/form">
-                <motion.button // Animate the button too
-                  className="bg-blue-600 px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300 ease-in-out text-white text-lg font-semibold"
-                  whileHover={{ scale: 1.05 }} // Scale up on hover
-                  whileTap={{ scale: 0.95 }}   // Scale down on tap
-                >
+                <button className="bg-blue-600 px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300 ease-in-out text-white text-lg font-semibold">
                   Get Started
-                </motion.button>
+                </button>
               </Link>
-              <motion.a // Animate the link too
+              <a
                 href="#about"
                 className="text-white border border-white px-6 py-3 rounded-md hover:bg-white hover:text-gray-950 transition duration-300 ease-in-out text-lg font-semibold"
-                whileHover={{ backgroundColor: "#ffffff", color: "#0a0a0a" }} // Change colors on hover
-                whileTap={{ scale: 0.95 }}
               >
                 Learn More
-              </motion.a>
+              </a>
             </div>
             {/* Feature Icons/Text Section */}
-            <motion.div
-              className="mt-16 flex flex-col md:flex-row justify-center md:justify-start space-y-8 md:space-y-0 md:space-x-8"
-              initial="hidden"
-              animate="visible"
-              variants={featureContainerVariants} // Apply container variants for staggering
-            >
-              <motion.div className="flex items-center space-x-3" variants={featureItemVariants}> {/* Apply item variants */}
+            <div className="mt-16 flex flex-col md:flex-row justify-center md:justify-start space-y-8 md:space-y-0 md:space-x-8">
+              <div className="flex items-center space-x-3">
                 {/* Placeholder for Data Driven Insights Icon */}
                 <svg
                   className="w-8 h-8 text-blue-400"
@@ -99,8 +52,8 @@ const Home = () => {
                 <span className="text-lg font-medium">
                   Data Driven Insights
                 </span>
-              </motion.div>
-              <motion.div className="flex items-center space-x-3" variants={featureItemVariants}> {/* Apply item variants */}
+              </div>
+              <div className="flex items-center space-x-3">
                 {/* Placeholder for Risk Assessment Icon */}
                 <svg
                   className="w-8 h-8 text-blue-400"
@@ -114,8 +67,8 @@ const Home = () => {
                   ></path>
                 </svg>
                 <span className="text-lg font-medium">Risk Assessment</span>
-              </motion.div>
-              <motion.div className="flex items-center space-x-3" variants={featureItemVariants}> {/* Apply item variants */}
+              </div>
+              <div className="flex items-center space-x-3">
                 {/* Placeholder for Growth Potential Icon */}
                 <svg
                   className="w-8 h-8 text-blue-400"
@@ -129,22 +82,17 @@ const Home = () => {
                   ></path>
                 </svg>
                 <span className="text-lg font-medium">Growth Potential</span>
-              </motion.div>
-            </motion.div>
-          </motion.div>
+              </div>
+            </div>
+          </div>
           {/* Right Column: Image */}
-          <motion.div
-            className="w-full md:w-1/2 flex justify-center md:justify-end"
-            initial="hidden"
-            animate="visible"
-            variants={imageVariants} // Apply image animation variants
-          >
+          <div className="w-full md:w-1/2 flex justify-center md:justify-end">
             <img
               src={laptopImage}
               alt="Laptop displaying financial charts and graphs"
               className="max-w-full h-auto rounded-lg shadow-lg "
             />
-          </motion.div>
+          </div>
         </div>
       </div>
     </div>
