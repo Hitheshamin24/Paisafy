@@ -1,28 +1,29 @@
 import { BarChart3, ShieldCheck, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
-import laptop from "../assets/laptop.jpeg"; // Import your image
+import laptop from "../assets/laptop.jpeg"; // Your hero image
+import { useInView } from "../hooks/useInView";
 
 const Hero = () => {
   return (
-    <section className="min-h-screen flex flex-col md:flex-row justify-center items-center text-white bg-gradient-to-br from-black to-gray-900">
-      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
-        {/* LEFT: Text Content */}
+    <section className="min-h-screen md:mt-0 mt-15 flex flex-col justify-center items-center text-white bg-gradient-to-br from-black to-gray-900 px-6 py-16">
+      <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
+        {/* LEFT: Text Section */}
         <div className="md:w-1/2 text-center md:text-left">
           <motion.h1
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-4xl sm:text-5xl font-bold leading-tight mb-9 mt-9"
+            className="text-4xl sm:text-5xl font-bold leading-tight mb-6"
           >
             Build Your Wealth <br />
-          with <span className="text-blue-500">Paisafy</span>
+            with <span className="text-blue-500">Paisafy</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="text-lg text-gray-300 mb-9"
+            className="text-lg text-gray-300 mb-8"
           >
             Get personalized investment suggestions based on your income, goals,
             and risk level.
@@ -46,7 +47,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7, duration: 0.6 }}
-            className="mt-10 flex flex-col md:flex-row items-center justify-start md:justify-start gap-6"
+            className="mt-10 flex flex-col sm:flex-row items-center sm:items-start gap-6"
           >
             <div className="flex items-center gap-3">
               <div className="bg-blue-950 rounded-full p-3">
@@ -69,17 +70,17 @@ const Hero = () => {
           </motion.div>
         </div>
 
-        {/* RIGHT: Image */}
+        {/* RIGHT: Image Section */}
         <motion.div
           initial={{ opacity: 0, x: 40 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.5, duration: 0.7 }}
-          className="md:w-1/2"
+          className="md:w-1/2 w-full"
         >
           <img
             src={laptop}
-            alt="Dashboard preview"
-            className="rounded-xl shadow-lg w-full object-cover"
+            alt="Investment Dashboard"
+            className="rounded-xl shadow-lg w-full object-cover max-h-[500px]"
           />
         </motion.div>
       </div>

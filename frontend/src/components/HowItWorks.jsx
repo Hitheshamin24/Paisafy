@@ -1,8 +1,15 @@
 import { User, Settings, BadgeCheck } from "lucide-react";
-
+import { useInView } from "../hooks/useInView";
+import{motion} from "framer-motion"
 const HowItWorks = () => {
+  const [ref,isInView]=useInView()
   return (
-    <section className="bg-[#0f172a] text-white py-16 px-6 ">
+    <motion.section
+     ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+     className="bg-[#0f172a] text-white py-16 px-6 " id="how-it-works">
       <div className="max-w-6xl mx-auto text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold mb-4">
           How Paisafy Works
@@ -46,7 +53,7 @@ const HowItWorks = () => {
           </p>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 

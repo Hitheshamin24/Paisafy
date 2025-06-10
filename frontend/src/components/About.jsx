@@ -1,14 +1,25 @@
 import { Lightbulb, TrendingUp, HandCoins } from "lucide-react";
+import { motion } from "framer-motion";
+import { useInView } from "../hooks/useInView";
 
 const About = () => {
+  const [ref, isInView] = useInView();
   return (
-    <section className="bg-[#0f172a] text-white py-16 px-6">
+    <motion.section
+      ref={ref}
+      initial={{ opacity: 0, y: 50 }}
+      animate={isInView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.8, ease: "easeOut" }}
+      className="bg-[#0f172a] text-white py-16 px-6"
+      id="About"
+    >
       <div className="max-w-6xl mx-auto text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold mb-4">
           Why Choose Paisafy?
         </h2>
         <p className="text-gray-300 max-w-2xl mx-auto">
-          We simplify investing by providing smart, tailored strategies that match your financial goals, risk tolerance, and time frame.
+          We simplify investing by providing smart, tailored strategies that
+          match your financial goals, risk tolerance, and time frame.
         </p>
       </div>
 
@@ -20,7 +31,8 @@ const About = () => {
           </div>
           <h3 className="text-xl font-semibold mb-2">Smart Strategies</h3>
           <p className="text-gray-400">
-            Generate investment plans using insights from your income, goals, and risk level.
+            Generate investment plans using insights from your income, goals,
+            and risk level.
           </p>
         </div>
 
@@ -31,7 +43,8 @@ const About = () => {
           </div>
           <h3 className="text-xl font-semibold mb-2">Maximized Growth</h3>
           <p className="text-gray-400">
-            Our AI evaluates the best stocks, SIPs, and ETFs to help grow your wealth faster.
+            Our AI evaluates the best stocks, SIPs, and ETFs to help grow your
+            wealth faster.
           </p>
         </div>
 
@@ -42,11 +55,12 @@ const About = () => {
           </div>
           <h3 className="text-xl font-semibold mb-2">Personalized Plans</h3>
           <p className="text-gray-400">
-            Every plan is custom-built around your financial situation and future goals.
+            Every plan is custom-built around your financial situation and
+            future goals.
           </p>
         </div>
       </div>
-    </section>
+    </motion.section>
   );
 };
 
