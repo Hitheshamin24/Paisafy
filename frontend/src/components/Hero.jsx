@@ -80,7 +80,7 @@ const Hero = () => {
           <img
             src={laptop}
             alt="Investment Dashboard"
-            className="rounded-xl shadow-lg w-full object-cover max-h-[500px]"
+            className="rounded-xl shadow-lg w-full object-cover max-h-[500px] "
           />
         </motion.div>
       </div>
