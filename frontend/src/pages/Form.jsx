@@ -62,15 +62,20 @@ function Form() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="bg-white/14 backdrop-blur-md p-6 sm:p-8 rounded-2xl shadow-xl w-full max-w-xl text-white max-h-[90vh] overflow-y-auto"
+            className="bg-[#0d1422] p-8 rounded-2xl shadow-2xl w-full max-w-2xl text-white"
           >
-            <h1 className=" text-3xl font-bold mb-6 text-center text-blue-200">
-              Paisafy - Smart Investment Planner
-            </h1>
+            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">
+              Get Your <span className="text-blue-400">Personalized</span>{" "}
+              Recommendations
+            </h2>
+            <p className="text-sm text-gray-300 text-center mb-6">
+              Fill out the form below to receive tailored investment advice
+              based on your financial situation and goals.
+            </p>
 
             <form
-              onSubmit={handleSubmit}
               className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              onSubmit={handleSubmit}
             >
               <div className="col-span-1 md:col-span-2">
                 <label className="block font-medium">Monthly Income (₹)</label>
@@ -142,9 +147,9 @@ function Form() {
               <div className="col-span-1 md:col-span-2">
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition"
+                  className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition mt-4"
                 >
-                  Get Recommendation
+                  Generate Recommendations
                 </button>
               </div>
             </form>

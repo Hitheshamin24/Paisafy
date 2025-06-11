@@ -9,7 +9,7 @@ import {
   UserButton,
 } from "@clerk/clerk-react";
 
-const Navbar = () => {
+const Navbar = ({onGetStartedClick}) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -39,12 +39,14 @@ const Navbar = () => {
             </a>
           </li>
           <li>
-            <Link
-              className="bg-blue-600 border rounded-md border-blue-600 px-4 py-1.5 hover:bg-blue-700 transition"
-              to="/form"
-            >
-              Get Started
-            </Link>
+            <li>
+              <button
+                onClick={onGetStartedClick}
+                className="bg-blue-600 border rounded-md border-blue-600 px-4 py-1.5 hover:bg-blue-700 transition"
+              >
+                Get Started
+              </button>
+            </li>
           </li>
 
           {/* Show login/signup when signed out */}
@@ -97,13 +99,15 @@ const Navbar = () => {
           >
             How it Works
           </a>
-          <Link
-            onClick={() => setIsOpen(false)}
-            className="block bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700 transition "
-            to="/form"
+          <button
+            onClick={() => {
+              setIsOpen(false);
+              onGetStartedClick();
+            }}
+            className="block bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700 transition w-full text-left"
           >
             Get Started
-          </Link>
+          </button>
 
           {/* Show login/signup button on mobile */}
           <SignedOut>

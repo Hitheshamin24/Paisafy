@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import laptop from "../assets/laptop.jpeg"; // Your hero image
 import { useInView } from "../hooks/useInView";
 
-const Hero = () => {
+const Hero = ({onGetStartedClick}) => {
   return (
     <section className="min-h-screen md:mt-0 mt-15 flex flex-col justify-center items-center text-white bg-gradient-to-br from-black to-gray-900 px-6 py-16">
       <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
@@ -34,12 +34,12 @@ const Hero = () => {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.5, duration: 0.5 }}
           >
-            <a
-              href="/form"
-              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition"
+            <button
+                onClick={onGetStartedClick}
+              className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition cursor-pointer"
             >
               Get Started
-            </a>
+            </button>
           </motion.div>
 
           {/* Icons Row */}
