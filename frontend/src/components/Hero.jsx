@@ -1,9 +1,19 @@
 import { BarChart3, ShieldCheck, TrendingUp } from "lucide-react";
 import { motion } from "framer-motion";
 import laptop from "../assets/laptop.jpeg"; // Your hero image
-import { useInView } from "../hooks/useInView";
+import { useUser, SignInButton, SignedOut } from "@clerk/clerk-react";
 
-const Hero = ({onGetStartedClick}) => {
+const Hero = ({ onGetStartedClick }) => {
+  const { isSignedIn } = useUser();
+
+  const handleGetStarted = () => {
+    if (isSignedIn) {
+      onGetStartedClick(); // Scroll to form
+    } else {
+      document.getElementById("hero-signin")?.click(); // Trigger sign-in modal
+    }
+  };
+
   return (
     <section className="min-h-screen md:mt-0 mt-15 flex flex-col justify-center items-center text-white bg-gradient-to-br from-black to-gray-900 px-6 py-16">
       <div className="max-w-7xl w-full mx-auto flex flex-col md:flex-row items-center justify-between gap-10">
@@ -35,7 +45,7 @@ const Hero = ({onGetStartedClick}) => {
             transition={{ delay: 0.5, duration: 0.5 }}
           >
             <button
-                onClick={onGetStartedClick}
+              onClick={handleGetStarted}
               className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition cursor-pointer"
             >
               Get Started
@@ -80,10 +90,17 @@ const Hero = ({onGetStartedClick}) => {
           <img
             src={laptop}
             alt="Investment Dashboard"
-            className="rounded-xl shadow-lg w-full object-cover max-h-[500px] "
+            className="rounded-xl shadow-lg w-full object-cover max-h-[500px]"
           />
         </motion.div>
       </div>
+
+      {/* Hidden SignInButton to trigger modal */}
+      <SignedOut>
+        <SignInButton mode="modal">
+          <button id="hero-signin" className="hidden" />
+        </SignInButton>
+      </SignedOut>
     </section>
   );
 };
