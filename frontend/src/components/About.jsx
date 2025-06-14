@@ -13,7 +13,7 @@ const About = () => {
       className="bg-[#0f172a] text-white py-16 px-6"
       id="About"
     >
-      <div className="max-w-6xl mx-auto text-center mb-12">
+      <div  className="max-w-6xl mx-auto text-center mb-12">
         <h2 className="text-3xl sm:text-4xl font-bold mb-4">
           Why Choose Paisafy?
         </h2>

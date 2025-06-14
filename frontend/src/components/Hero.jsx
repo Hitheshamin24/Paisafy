@@ -23,7 +23,7 @@ const Hero = ({ onGetStartedClick }) => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="text-4xl sm:text-5xl font-bold leading-tight"
+            className="text-4xl sm:text-5xl font-bold leading-tight mb-6"
           >
             Build Your Wealth <br />
             with <span className="text-blue-500">Paisafy</span>

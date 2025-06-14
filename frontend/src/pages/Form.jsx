@@ -50,12 +50,8 @@ function Form() {
     <>
       <SignedIn>
         <div
-          className="relative w-screen h-screen bg-cover bg-center flex items-center justify-center"
-          style={{
-            backgroundImage: "url('/background.jpg')",
-            backgroundColor: "rgba(0, 0, 0, 0.9)",
-            backgroundBlendMode: "multiply",
-          }}
+          className="relative w-screen h-screen bg-cover bg-center flex items-center justify-center bg-gradient-to-br from-black to-gray-800"
+         
         >
           {/* Form Container */}
           <motion.div

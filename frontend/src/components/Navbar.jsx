@@ -36,7 +36,7 @@ const Navbar = ({ onGetStartedClick }) => {
             <Link className="hover:text-blue-400" to="/">Home</Link>
           </li>
           <li>
-            <a className="hover:text-blue-400" href="#about">About</a>
+            <a className="hover:text-blue-400" href="#About">About</a>
           </li>
           <li>
             <a className="hover:text-blue-400" href="#how-it-works">How it Works</a>
