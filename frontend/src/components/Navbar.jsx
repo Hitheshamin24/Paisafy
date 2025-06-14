@@ -44,7 +44,7 @@ const Navbar = ({ onGetStartedClick }) => {
           <li>
             <button
               onClick={handleGetStarted}
-              className="bg-blue-600 border rounded-md border-blue-600 px-4 py-1.5 hover:bg-blue-700 transition"
+              className="bg-blue-600 border rounded-md border-blue-600 px-4 py-1.5 hover:bg-blue-700 transition cursor-pointer"
             >
               Get Started
             </button>
