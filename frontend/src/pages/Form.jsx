@@ -38,7 +38,7 @@ function Form() {
         ...formData,
         income: Number(formData.income),
         amountToInvest: Number(formData.amountToInvest),
-          horizon: Number(formData.horizon), 
+        horizon: Number(formData.horizon),
       });
       setResult(res.data);
     } catch (err) {
@@ -50,10 +50,7 @@ function Form() {
   return (
     <>
       <SignedIn>
-        <div
-          className="relative w-screen h-screen bg-cover bg-center flex items-center justify-center bg-gradient-to-br from-black to-gray-800"
-         
-        >
+        <div className="relative w-screen h-screen bg-cover bg-center flex items-center justify-center bg-gradient-to-br from-black to-gray-800">
           {/* Form Container */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -185,6 +182,10 @@ function Form() {
                       </li>
                     ))}
                   </ul>
+                </div>
+                <div className="mt-6 text-lg font-semibold text-green-400">
+                  📈 Estimated Future Value (after inflation): ₹
+                  {result.expected_return.toLocaleString()}
                 </div>
               </div>
             )}
