@@ -38,6 +38,7 @@ function Form() {
         ...formData,
         income: Number(formData.income),
         amountToInvest: Number(formData.amountToInvest),
+          horizon: Number(formData.horizon), 
       });
       setResult(res.data);
     } catch (err) {
