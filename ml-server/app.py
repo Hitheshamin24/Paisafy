@@ -1,97 +1,107 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import joblib
+import numpy as np
 
 app = Flask(__name__)
 CORS(app)
 
+# Load trained model
+model = joblib.load("model.pkl")  # path to your trained model
 
 @app.route('/predict', methods=['POST'])
 def predict():
     data = request.json
 
-    income = data.get('income', 0)
-    monthly_investment = data.get('amountToInvest', 0)
-    risk = data.get('risk', 'medium')
-    horizon_raw = data.get('horizon', 1)
-
     try:
-        horizon = int(horizon_raw)
+        income = float(data.get('income', 0))
+        amount = float(data.get('amountToInvest', 0))
+        risk = data.get('risk', 'medium').lower()
+        horizon = int(data.get('horizon', 1))
     except (TypeError, ValueError):
-        return jsonify({"error": "Invalid value for horizon"}), 400
+        return jsonify({"error": "Invalid input values"}), 400
 
-    # Determine time category
-    if horizon <= 2:
-        time_category = 'short'
-    elif horizon <= 5:
-        time_category = 'medium'
-    else:
-        time_category = 'long'
+    # Encode risk numerically
+    risk_map = {"low": 0, "medium": 1, "high": 2}
+    risk_encoded = risk_map.get(risk, 1)
 
-    # Define annual expected return per risk
-    expected_rate_map = {
-        "low": 0.06,
-        "medium": 0.10,
-        "high": 0.14
-    }
+    # Predict return using ML model
+    features = np.array([[income, amount, risk_encoded, horizon]])
+    predicted_return = float(round(model.predict(features)[0], 2))
 
-    inflation_rate = 0.05
-    annual_rate = expected_rate_map.get(risk, 0.10)
-
-    # Convert to monthly values
-    r = annual_rate / 12
-    n = horizon * 12
-
-    def sip_future_value(p, r, n):
-        return p * (((1 + r) ** n - 1) / r) * (1 + r)
-
-    def adjust_for_inflation(fv, inflation_rate, years):
-        return round(fv / ((1 + inflation_rate) ** years), 2)
-
-    # Determine investment split
+    # Initialize response
     recommendations = {
         "stocks": [],
         "sip": [],
         "etf": [],
-        "expected_return": 0,
+        "expected_return": predicted_return
     }
 
-    total_monthly = 0
+    # Investment option lists
+    stock_list = [
+        "Reliance Industries", "TCS", "Infosys", "ICICI Bank", "HDFC Bank",
+        "SBI", "Axis Bank", "L&T", "ITC", "HUL"
+    ]
 
+    sip_list = [
+        "SBI Bluechip Fund", "HDFC Equity Fund", "ICICI Prudential Value Discovery Fund"
+    ]
+
+    etf_list = [
+        "Nifty 50 ETF", "Nifty Next 50 ETF", "Sensex ETF"
+    ]
+
+    # Allocation Logic
     if risk == "high":
-        if time_category == "long":
-            stock_amt = monthly_investment * 0.6
-            etf_amt = monthly_investment * 0.4
-            recommendations["stocks"].append(
-                {"name": "Reliance Industries", "amount": stock_amt})
-            recommendations["etf"].append(
-                {"name": "Nifty 50 ETF", "amount": etf_amt})
-            total_monthly = stock_amt + etf_amt
-        else:
-            recommendations["etf"].append(
-                {"name": "Nifty 50 ETF", "amount": monthly_investment})
-            total_monthly = monthly_investment
+        stock_amt = amount * 0.7
+        etf_amt = amount * 0.3
+
+        per_stock = stock_amt / len(stock_list)
+        for stock in stock_list:
+            recommendations["stocks"].append({
+                "name": stock,
+                "amount": round(per_stock, 2)
+            })
+
+        per_etf = etf_amt / len(etf_list)
+        for etf in etf_list:
+            recommendations["etf"].append({
+                "name": etf,
+                "amount": round(per_etf, 2)
+            })
+
     elif risk == "medium":
-        if time_category in ['medium', 'long']:
-            sip_amt = monthly_investment * 0.7
-            etf_amt = monthly_investment * 0.3
-            recommendations["sip"].append(
-                {"name": "SBI Bluechip Fund", "amount": sip_amt})
-            recommendations["etf"].append(
-                {"name": "Nifty Next 50 ETF", "amount": etf_amt})
-            total_monthly = sip_amt + etf_amt
-        else:
-            recommendations["sip"].append(
-                {"name": "ICICI Prudential Balanced Advantage", "amount": monthly_investment})
-            total_monthly = monthly_investment
-    else:
-        recommendations["sip"].append(
-            {"name": "HDFC Balanced Fund", "amount": monthly_investment})
-        total_monthly = monthly_investment
+        sip_amt = amount * 0.6
+        etf_amt = amount * 0.4
 
-    future_value = sip_future_value(total_monthly, r, n)
-    real_return = adjust_for_inflation(future_value, inflation_rate, horizon)
+        per_sip = sip_amt / len(sip_list)
+        for sip in sip_list:
+            recommendations["sip"].append({
+                "name": sip,
+                "amount": round(per_sip, 2)
+            })
 
-    recommendations["expected_return"] = real_return
+        per_etf = etf_amt / len(etf_list)
+        for etf in etf_list:
+            recommendations["etf"].append({
+                "name": etf,
+                "amount": round(per_etf, 2)
+            })
+
+    else:  # low risk
+        sip_amt = amount * 0.8
+        etf_amt = amount * 0.2
+
+        for sip in sip_list[:2]:  # pick only 2
+            recommendations["sip"].append({
+                "name": sip,
+                "amount": round(sip_amt / 2, 2)
+            })
+
+        recommendations["etf"].append({
+            "name": etf_list[0],
+            "amount": round(etf_amt, 2)
+        })
 
     return jsonify(recommendations)
 
