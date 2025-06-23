@@ -6,8 +6,7 @@ import numpy as np
 app = Flask(__name__)
 CORS(app)
 
-# Load trained model
-model = joblib.load("model.pkl")  # path to your trained model
+model = joblib.load("model.pkl")  
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -21,7 +20,6 @@ def predict():
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid input values"}), 400
 
-    # Encode risk numerically
     risk_map = {"low": 0, "medium": 1, "high": 2}
     risk_encoded = risk_map.get(risk, 1)
 
@@ -29,7 +27,6 @@ def predict():
     features = np.array([[income, amount, risk_encoded, horizon]])
     predicted_return = float(round(model.predict(features)[0], 2))
 
-    # Initialize response
     recommendations = {
         "stocks": [],
         "sip": [],
@@ -51,7 +48,6 @@ def predict():
         "Nifty 50 ETF", "Nifty Next 50 ETF", "Sensex ETF"
     ]
 
-    # Allocation Logic
     if risk == "high":
         stock_amt = amount * 0.7
         etf_amt = amount * 0.3
@@ -92,7 +88,7 @@ def predict():
         sip_amt = amount * 0.8
         etf_amt = amount * 0.2
 
-        for sip in sip_list[:2]:  # pick only 2
+        for sip in sip_list[:2]:  
             recommendations["sip"].append({
                 "name": sip,
                 "amount": round(sip_amt / 2, 2)

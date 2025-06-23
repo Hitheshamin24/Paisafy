@@ -1,7 +1,6 @@
 import yfinance as yf
 import pandas as pd
 
-# NSE symbols (with .NS suffix)
 stocks = {
     "RELIANCE.NS": "Reliance Industries",
     "TCS.NS": "TCS",
