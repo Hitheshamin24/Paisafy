@@ -125,7 +125,7 @@ function Form() {
                   value={formData.amountToInvest}
                   onChange={handleChange}
                   placeholder="eg:5000"
-                  className="mt-1 w-full border border-white/20  placeholder-gray-500 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+                  className="mt-1 w-full border border-white/20  placeholder-gray-500 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
                   required
                 />
               </div>
@@ -159,7 +159,7 @@ function Form() {
                   name="horizon"
                   value={formData.horizon}
                   onChange={handleChange}
-                  className="mt-1 w-full border border-white/20 placeholder-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-black" // Added text-black
+                  className="mt-1 w-full border border-white/20 placeholder-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white" // Added text-black
                   placeholder="e.g., 5"
                   required
                   min="1"
