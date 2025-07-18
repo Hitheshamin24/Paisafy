@@ -7,6 +7,14 @@ app = Flask(__name__)
 CORS(app)
 
 model = joblib.load("model.pkl")  
+def calculate_future_value(monthly_investment, annual_return_percent, years):
+    r = (annual_return_percent / 100) / 12  # monthly rate
+    n = years * 12
+    if r == 0:
+        return round(monthly_investment * n, 2)
+    fv = monthly_investment * (((1 + r) ** n - 1) / r) * (1 + r)
+    return round(fv, 2)
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -16,7 +24,7 @@ def predict():
         amount = float(data.get('amountToInvest', 0))
         risk = data.get('risk', 'medium').lower()
         horizon = int(data.get('horizon', 1))
-        preferred = data.get('preferredTypes', [])  # 👈 Get preferred types
+        preferred = data.get('preferredTypes', [])  
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid input values"}), 400
 
@@ -25,13 +33,21 @@ def predict():
 
     features = np.array([[income, amount, risk_encoded, horizon]])
     predicted_return = float(round(model.predict(features)[0], 2))
+    
+
+# Clamp the return between 0% and 30% (sensible real-world range)
+    predicted_return = max(0, min(predicted_return, 30))
+
+    future_value = calculate_future_value(amount, predicted_return, horizon)
 
     recommendations = {
-        "stocks": [],
-        "sip": [],
-        "etf": [],
-        "expected_return": predicted_return
-    }
+    "stocks": [],
+    "sip": [],
+    "etf": [],
+    "expected_return": predicted_return,
+    "future_value": future_value
+}
+
 
     stock_list = [
         "Reliance Industries", "TCS", "Infosys", "ICICI Bank", "HDFC Bank",
@@ -64,6 +80,15 @@ def predict():
                 })
 
     elif risk == "medium":
+        if "Stocks" in preferred:
+            stock_amt = amount * 0.7
+            limited_stocks = stock_list[:3]  # ✅ Choose only top 3 stocks
+            per_stock = stock_amt / len(limited_stocks)
+            for stock in limited_stocks:
+                recommendations["stocks"].append({
+                    "name": stock,
+                    "amount": round(per_stock, 2)
+                })
         if "SIPs" in preferred:
             sip_amt = amount * 0.6
             per_sip = sip_amt / len(sip_list)

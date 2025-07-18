@@ -421,7 +421,7 @@ function Form() {
                 {/* === Final Return Summary === */}
                 <div className="mt-8 text-xl font-bold text-green-400 text-center">
                   📈 Estimated Future Value: ₹
-                  {result.expected_return.toLocaleString()}
+                  {result.future_value.toLocaleString()}
                 </div>
               </div>
             )}
