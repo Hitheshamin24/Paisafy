@@ -365,8 +365,11 @@ function Form() {
                             {stock.description}
                           </p>
                         )}
-                        <span className="text-green-400 font-semibold block mt-2">
-                          ₹{stock.amount}
+                        <p className="text-gray-400 text-sm mt-2">
+                          Price: ₹{stock.price ? stock.price.toFixed(2) : "N/A"}
+                        </p>
+                        <span className="text-green-400 font-semibold block">
+                          Invest: ₹{stock.amount}
                         </span>
                       </div>
                     ))}
@@ -388,8 +391,11 @@ function Form() {
                             {etf.description}
                           </p>
                         )}
-                        <span className="text-green-400 font-semibold block mt-2">
-                          ₹{etf.amount}
+                        <p className="text-gray-400 text-sm mt-2">
+                          Price: ₹{etf.price ? etf.price.toFixed(2) : "N/A"}
+                        </p>
+                        <span className="text-green-400 font-semibold block">
+                          Invest: ₹{etf.amount}
                         </span>
                       </div>
                     ))}
@@ -411,8 +417,11 @@ function Form() {
                             {sip.description}
                           </p>
                         )}
-                        <span className="text-green-400 font-semibold block mt-2">
-                          ₹{sip.amount.toFixed(2)}
+                       <p className="text-gray-400 text-sm mt-2">
+                          Price: ₹{sip.price ? sip.price.toFixed(2) : "N/A"}
+                        </p>
+                        <span className="text-green-400 font-semibold block">
+                          Invest: ₹{sip.amount}
                         </span>
                       </div>
                     ))}
