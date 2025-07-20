@@ -4,59 +4,62 @@ import { useInView } from "../hooks/useInView";
 
 const About = () => {
   const [ref, isInView] = useInView();
+
   return (
     <motion.section
       ref={ref}
       initial={{ opacity: 0, y: 50 }}
       animate={isInView ? { opacity: 1, y: 0 } : {}}
       transition={{ duration: 0.8, ease: "easeOut" }}
-      className="bg-[#0f172a] text-white py-16 px-6"
+      className="bg-[#0B0F19] text-white py-20 px-6"
       id="About"
     >
-      <div  className="max-w-6xl mx-auto text-center mb-12">
-        <h2 className="text-3xl sm:text-4xl font-bold mb-4">
+      <div className="max-w-6xl mx-auto text-center mb-16">
+        <h2 className="text-4xl sm:text-5xl font-bold mb-4 leading-tight">
           Why Choose Paisafy?
         </h2>
-        <p className="text-gray-300 max-w-2xl mx-auto">
-          We simplify investing by providing smart, tailored strategies that
-          match your financial goals, risk tolerance, and time frame.
+        <p className="text-gray-400 max-w-2xl mx-auto text-lg">
+          Smart, custom investment plans designed to help you grow wealth confidently.
         </p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto text-center">
-        {/* Insightful Planning */}
-        <div className="bg-[#1e293b] rounded-xl p-6 hover:shadow-lg transition">
-          <div className="flex justify-center mb-4">
-            <Lightbulb className="w-10 h-10 text-blue-400" />
+      <div className="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+        {/* Smart Strategies */}
+        <div className="bg-[#101624]/60 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl hover:scale-[1.02] transition-all duration-300">
+          <div className="flex justify-center mb-6">
+            <Lightbulb className="w-12 h-12 text-blue-500 drop-shadow-glow" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Smart Strategies</h3>
-          <p className="text-gray-400">
-            Generate investment plans using insights from your income, goals,
-            and risk level.
+          <h3 className="text-2xl font-semibold mb-3 text-white">
+            Smart Strategies
+          </h3>
+          <p className="text-gray-400 text-md">
+            Generate intelligent investment plans tailored to your income, goals, and risk level.
           </p>
         </div>
 
-        {/* Growth Forecasting */}
-        <div className="bg-[#1e293b] rounded-xl p-6 hover:shadow-lg transition">
-          <div className="flex justify-center mb-4">
-            <TrendingUp className="w-10 h-10 text-blue-400" />
+        {/* Maximized Growth */}
+        <div className="bg-[#101624]/60 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl hover:scale-[1.02] transition-all duration-300">
+          <div className="flex justify-center mb-6">
+            <TrendingUp className="w-12 h-12 text-green-500 drop-shadow-glow" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Maximized Growth</h3>
-          <p className="text-gray-400">
-            Our AI evaluates the best stocks, SIPs, and ETFs to help grow your
-            wealth faster.
+          <h3 className="text-2xl font-semibold mb-3 text-white">
+            Maximized Growth
+          </h3>
+          <p className="text-gray-400 text-md">
+            Our AI suggests optimal stocks, SIPs, and ETFs to help grow your investments.
           </p>
         </div>
 
-        {/* Personalized Planning */}
-        <div className="bg-[#1e293b] rounded-xl p-6 hover:shadow-lg transition">
-          <div className="flex justify-center mb-4">
-            <HandCoins className="w-10 h-10 text-blue-400" />
+        {/* Personalized Plans */}
+        <div className="bg-[#101624]/60 backdrop-blur-md border border-white/10 rounded-2xl p-8 shadow-xl hover:scale-[1.02] transition-all duration-300">
+          <div className="flex justify-center mb-6">
+            <HandCoins className="w-12 h-12 text-yellow-500 drop-shadow-glow" />
           </div>
-          <h3 className="text-xl font-semibold mb-2">Personalized Plans</h3>
-          <p className="text-gray-400">
-            Every plan is custom-built around your financial situation and
-            future goals.
+          <h3 className="text-2xl font-semibold mb-3 text-white">
+            Personalized Plans
+          </h3>
+          <p className="text-gray-400 text-md">
+            Each plan is uniquely created for your lifestyle, goals, and future.
           </p>
         </div>
       </div>

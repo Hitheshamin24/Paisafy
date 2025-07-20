@@ -78,41 +78,40 @@ function Form() {
   return (
     <>
       <SignedIn>
-        <div className="relative w-screen min-h-screen bg-cover bg-center flex items-center justify-center bg-gradient-to-br from-black to-gray-800">
-          {/* Form Container */}
+        <div className="w-full min-h-screen bg-[#0B0F19] flex items-center justify-center px-4 pt-20 pb-16">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="bg-[#0d1422] p-8 rounded-2xl shadow-2xl w-full max-w-2xl text-white mt-15 mb-15"
+            className="bg-[#101624]/60 backdrop-blur-md border border-white/10 p-8 md:p-10 rounded-2xl shadow-2xl w-full max-w-3xl text-white"
           >
-            <h2 className="text-2xl sm:text-3xl font-bold text-center mb-2">
-              Get Your <span className="text-blue-400">Personalized</span>{" "}
+            <h2 className="text-3xl font-bold text-center mb-2">
+              Get Your{" "}
+              <span className="text-blue-500 drop-shadow-glow">
+                Personalized
+              </span>{" "}
               Recommendations
             </h2>
-            <p className="text-sm text-gray-300 text-center mb-6">
-              Fill out the form below to receive tailored investment advice
-              based on your financial situation and goals.
+            <p className="text-sm text-gray-400 text-center mb-8">
+              Fill the form below to get tailored investment insights.
             </p>
 
             <form
-              className="grid grid-cols-1 md:grid-cols-2 gap-4"
+              className="grid grid-cols-1 md:grid-cols-2 gap-5"
               onSubmit={handleSubmit}
             >
-              <div className="col-span-1 md:col-span-2">
+              <div className="md:col-span-2">
                 <label className="block font-medium">Monthly Income (₹)</label>
                 <input
                   type="number"
                   name="income"
                   value={formData.income}
                   onChange={handleChange}
-                  placeholder="eg:,25000"
-                  className="mt-1 w-full border border-white/20 placeholder-gray-600  rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-300" // Added text-black for visibility
+                  placeholder="e.g., 25000"
+                  className="w-full mt-1 rounded-md bg-white/5 px-4 py-2 text-white placeholder-gray-400 focus:outline-style: none;  focus:ring-blue-500"
                   required
                 />
-                <p className="text-sm text-gray-500 mt-1 break-words">
-                  {suggestion}
-                </p>
+                <p className="text-xs text-gray-500 mt-1">{suggestion}</p>
               </div>
 
               <div>
@@ -124,8 +123,8 @@ function Form() {
                   name="amountToInvest"
                   value={formData.amountToInvest}
                   onChange={handleChange}
-                  placeholder="eg:5000"
-                  className="mt-1 w-full border border-white/20  placeholder-gray-500 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                  placeholder="e.g., 5000"
+                  className="w-full mt-1 rounded-md bg-white/5 border border-white/10 px-4 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
                   required
                 />
               </div>
@@ -136,21 +135,66 @@ function Form() {
                   name="risk"
                   value={formData.risk}
                   onChange={handleChange}
-                  className="mt-1 w-full bg-white/1 border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white"
+                  className="w-full mt-1 rounded-md bg-white/5 border border-white/10 px-4 py-2 text-white focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="low" className="bg-gray-700 text-white">
-                    Low
-                  </option>
-                  <option value="medium" className="bg-gray-700 text-white">
-                    Medium
-                  </option>
-                  <option value="high" className="bg-gray-700 text-white">
-                    High
-                  </option>
+                  {["low", "medium", "high"].map((risk) => (
+                    <option
+                      key={risk}
+                      value={risk}
+                      className="bg-gray-800 text-white"
+                    >
+                      {risk[0].toUpperCase() + risk.slice(1)}
+                    </option>
+                  ))}
                 </select>
               </div>
 
-              <div className="md:col-span-2">
+              <div>
+                <label className="block font-medium">Investment Goal</label>
+                <select
+                  name="goal"
+                  value={formData.goal}
+                  onChange={handleChange}
+                  className="w-full mt-1 rounded-md bg-white/5 border border-white/10 px-4 py-2 text-white focus:ring-2 focus:ring-blue-500"
+                >
+                  {[
+                    "Wealth Creation",
+                    "Retirement",
+                    "Child Education",
+                    "Short-Term Gains",
+                  ].map((goal) => (
+                    <option
+                      key={goal}
+                      value={goal}
+                      className="bg-gray-800 text-white"
+                    >
+                      {goal}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-medium">Experience Level</label>
+                <select
+                  name="experience"
+                  value={formData.experience}
+                  onChange={handleChange}
+                  className="w-full mt-1 rounded-md bg-white/5 border border-white/10 px-4 py-2 text-white focus:ring-2 focus:ring-blue-500"
+                >
+                  {["Beginner", "Intermediate", "Expert"].map((level) => (
+                    <option
+                      key={level}
+                      value={level}
+                      className="bg-gray-800 text-white"
+                    >
+                      {level}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
                 <label className="block font-medium">
                   Time Frame (in years)
                 </label>
@@ -159,88 +203,42 @@ function Form() {
                   name="horizon"
                   value={formData.horizon}
                   onChange={handleChange}
-                  className="mt-1 w-full border border-white/20 placeholder-gray-400 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 text-white" // Added text-black
                   placeholder="e.g., 5"
+                  className="w-full mt-1 rounded-md bg-white/5 border border-white/10 px-4 py-2 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500"
                   required
                   min="1"
                 />
               </div>
-              {/* Investment Goal */}
-              <div>
-                <label className="block font-medium">Investment Goal</label>
-                <select
-                  name="goal"
-                  value={formData.goal}
-                  onChange={handleChange}
-                  className="mt-1 w-full bg-white/0 border border-white/20 rounded px-3 py-2 text-white"
-                >
-                  <option value="Wealth Creation" className="bg-gray-700">
-                    Wealth Creation
-                  </option>
-                  <option value="Retirement" className="bg-gray-700">
-                    Retirement
-                  </option>
-                  <option value="Child Education" className="bg-gray-700">
-                    Child Education
-                  </option>
-                  <option value="Short-Term Gains" className="bg-gray-700">
-                    Short-Term Gains
-                  </option>
-                </select>
-              </div>
 
-              {/* Preferred Investment Types as Checkboxes */}
               <div>
                 <label className="block font-medium mb-1">
                   Preferred Investment Types
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {["Stocks", "SIPs", "ETFs"].map((type) => (
-                    <div key={type} className="flex items-center">
+                    <label
+                      key={type}
+                      className="text-gray-300 flex items-center gap-2 mt-3"
+                    >
                       <input
                         type="checkbox"
-                        id={type}
                         name="preferredTypes"
                         value={type}
                         checked={formData.preferredTypes.includes(type)}
                         onChange={handleCheckboxChange}
-                        className="mr-2 form-checkbox h-4 w-4 text-blue-600 rounded"
+                        className="h-4 w-4 accent-blue-500"
                       />
-                      <label htmlFor={type} className="text-gray-200">
-                        {type}
-                      </label>
-                    </div>
+                      {type}
+                    </label>
                   ))}
                 </div>
               </div>
 
-              {/* Experience Level */}
-              <div>
-                <label className="block font-medium">Experience Level</label>
-                <select
-                  name="experience"
-                  value={formData.experience}
-                  onChange={handleChange}
-                  className="mt-1 w-full bg-transparent border border-white/10 rounded px-3 py-2 text-white"
-                >
-                  <option value="Beginner" className="bg-gray-700">
-                    Beginner
-                  </option>
-                  <option value="Intermediate" className="bg-gray-700">
-                    Intermediate
-                  </option>
-                  <option value="Expert" className="bg-gray-700">
-                    Expert
-                  </option>
-                </select>
-              </div>
-
-              {/* Sector Preferences as Checkboxes */}
               <div>
                 <label className="block font-medium mb-1">
                   Preferred Sectors
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {[
                     "IT",
                     "Banking",
@@ -250,28 +248,28 @@ function Form() {
                     "Automobile",
                     "Healthcare",
                   ].map((sector) => (
-                    <div key={sector} className="flex items-center">
+                    <label
+                      key={sector}
+                      className="text-gray-300 flex items-center gap-2"
+                    >
                       <input
                         type="checkbox"
-                        id={sector}
                         name="sectors"
                         value={sector}
                         checked={formData.sectors.includes(sector)}
                         onChange={handleCheckboxChange}
-                        className="mr-2 form-checkbox h-4 w-4 text-blue-600 rounded"
+                        className="h-4 w-4 accent-blue-500"
                       />
-                      <label htmlFor={sector} className="text-gray-200">
-                        {sector}
-                      </label>
-                    </div>
+                      {sector}
+                    </label>
                   ))}
                 </div>
               </div>
 
-              <div className="col-span-1 md:col-span-2">
+              <div className="md:col-span-2">
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition mt-4"
+                  className="w-full bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white font-semibold py-3 rounded-lg shadow-lg"
                 >
                   Generate Recommendations
                 </button>
@@ -417,7 +415,7 @@ function Form() {
                             {sip.description}
                           </p>
                         )}
-                       <p className="text-gray-400 text-sm mt-2">
+                        <p className="text-gray-400 text-sm mt-2">
                           Price: ₹{sip.price ? sip.price.toFixed(2) : "N/A"}
                         </p>
                         <span className="text-green-400 font-semibold block">
