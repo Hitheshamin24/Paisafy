@@ -1,13 +1,57 @@
+import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import joblib
 import numpy as np
 import yfinance as yf
+import difflib
 
 app = Flask(__name__)
 CORS(app)
 
 model = joblib.load("model.pkl")
+
+
+def load_amfi_nav_dict():
+    url = "https://www.amfiindia.com/spages/NAVAll.txt"
+    response = requests.get(url)
+    lines = response.text.splitlines()
+
+    nav_data = {}
+    for line in lines:
+        if ';' not in line:
+            continue
+        parts = line.split(';')
+        if len(parts) >= 5:
+            scheme_name = parts[3].strip()
+            try:
+                nav = float(parts[4].strip())
+                nav_data[scheme_name] = nav
+            except:
+                continue
+    return nav_data
+
+
+# Load once globally (optional caching)
+amfi_nav_dict = load_amfi_nav_dict()
+
+
+def get_nav_from_amfi(amfi_code):
+    url = "https://www.amfiindia.com/spages/NAVAll.txt"
+    response = requests.get(url)
+    if response.status_code != 200:
+        return None
+
+    nav_lines = response.text.splitlines()
+    for line in nav_lines:
+        parts = line.split(';')
+        if len(parts) >= 6 and parts[0] == str(amfi_code):
+            try:
+                return float(parts[4])  # NAV value
+            except ValueError:
+                return None
+    return None
+
 
 def calculate_future_value(monthly_investment, annual_return_percent, years):
     r = (annual_return_percent / 100) / 12
@@ -16,6 +60,7 @@ def calculate_future_value(monthly_investment, annual_return_percent, years):
         return round(monthly_investment * n, 2)
     fv = monthly_investment * (((1 + r) ** n - 1) / r) * (1 + r)
     return round(fv, 2)
+
 
 @app.route('/predict', methods=['POST'])
 def predict():
@@ -58,9 +103,12 @@ def predict():
         "HUL": "HINDUNILVR.NS"
     }
 
-    sip_list = [
-        "SBI Bluechip Fund", "HDFC Equity Fund", "ICICI Prudential Value Discovery Fund"
-    ]
+    # Exact AMFI scheme name map (you can expand this)
+    sip_funds = {
+        "Nippon India Small Cap Fund - Growth": "113177",
+        "HDFC Hybrid Equity Fund - IDCW ": "119061",
+        "ICICI Prudential US Bluechip Equity Fund - Direct Plan -IDCW": "120185",
+    }
 
     etf_list = [
         "Nifty 50 ETF", "Nifty Next 50 ETF", "Sensex ETF"
@@ -74,7 +122,8 @@ def predict():
     # Stocks
     if "Stocks" in preferred and risk in ["high", "medium"]:
         stock_amt = amount * 0.7
-        limited_stocks = list(stock_map.items()) if risk == "high" else list(stock_map.items())[:3]
+        limited_stocks = list(stock_map.items()) if risk == "high" else list(
+            stock_map.items())[:3]
         per_stock = stock_amt / len(limited_stocks)
 
         for name, symbol in limited_stocks:
@@ -98,21 +147,21 @@ def predict():
                     "amount": round(per_stock, 2)
                 })
 
-    # SIPs
     if "SIPs" in preferred:
-        sip_amt = (
-            amount * 0.8 if risk == "low"
-            else amount * 0.6
-        )
-        sip_targets = sip_list[:2] if risk == "low" else sip_list
+        sip_amt = amount * (0.8 if risk == "low" else 0.6)
+        sip_targets = list(sip_funds.keys())[
+            :2] if risk == "low" else list(sip_funds.keys())
         per_sip = sip_amt / len(sip_targets)
 
-        for sip in sip_targets:
+        for sip_name in sip_targets:
+            amfi_code = sip_funds[sip_name]
+            nav_price = get_nav_from_amfi(amfi_code)
+
             recommendations["sip"].append({
-                "name": sip,
-                "symbol": "N/A",
-                # "description": "Mutual fund data not available via Yahoo Finance",
-                "price": 0,
+                "name": sip_name,
+                "symbol": f"AMFI-{amfi_code}",
+                "description": "Real-time NAV from AMFI",
+                "price": round(nav_price, 2) if nav_price else "N/A",
                 "amount": round(per_sip, 2)
             })
 
@@ -151,6 +200,7 @@ def predict():
                 })
 
     return jsonify(recommendations)
+
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
