@@ -284,45 +284,72 @@ function Form() {
                     Portfolio Allocation
                   </h3>
 
-                  <div className="space-y-4">
-                    {[
-                      {
-                        label: "Stocks",
-                        value: result.allocations?.stocks || 0,
-                        color: "bg-blue-500",
-                      },
-                      {
-                        label: "ETFs",
-                        value: result.allocations?.etfs || 0,
-                        color: "bg-green-500",
-                      },
-                      {
-                        label: "SIPs",
-                        value: result.allocations?.sips || 0,
-                        color: "bg-yellow-500",
-                      },
-                    ].map((item) => (
-                      <div key={item.label}>
-                        <div className="flex justify-between text-sm text-gray-300 mb-1">
-                          <span>{item.label}</span>
-                          <span>{item.value}%</span>
+                  {(() => {
+                    const totalAmount = Number(formData.amountToInvest || 0);
+                    return (
+                      <>
+                        <pre className="text-white text-xs">
+                          {JSON.stringify(
+                            {
+                              amountToInvest: formData.amountToInvest,
+                              allocations: result.allocations,
+                            },
+                            null,
+                            2
+                          )}
+                        </pre>
+
+                        <div className="space-y-6">
+                          {[
+                            {
+                              label: "Stocks",
+                              value: result.allocations?.stocks || 0,
+                              color: "bg-blue-500",
+                            },
+                            {
+                              label: "ETFs",
+                              value: result.allocations?.etfs || 0,
+                              color: "bg-green-500",
+                            },
+                            {
+                              label: "SIPs",
+                              value: result.allocations?.sips || 0,
+                              color: "bg-yellow-500",
+                            },
+                          ].map((item) => {
+                            const amount = (
+                              (item.value / 100) *
+                              totalAmount
+                            ).toFixed(0);
+                            return (
+                              <div key={item.label} className="text-sm">
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-white font-medium">
+                                    {item.label}
+                                  </span>
+                                  <span className="text-gray-300">
+                                    {item.value.toFixed(1)}%
+                                  </span>
+                                </div>
+
+                                <div className="w-full h-3 bg-gray-700 rounded overflow-hidden">
+                                  <div
+                                    className={`${item.color} h-3 transition-all duration-300`}
+                                    style={{ width: `${item.value}%` }}
+                                  ></div>
+                                </div>
+
+                                <div className="text-gray-400 mt-2 text-center font-semibold">
+                                  ₹{parseInt(amount).toLocaleString("en-IN")} (
+                                  {item.value.toFixed(1)}%)
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div className="w-full h-2 bg-gray-700 rounded">
-                          <div
-                            className={`${item.color} h-2 rounded`}
-                            style={{ width: `${item.value}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-gray-400 text-sm mt-1">
-                          ₹
-                          {(
-                            (item.value / 100) *
-                            formData.amountToInvest
-                          ).toFixed(0)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 {/* === Tabs === */}
@@ -425,10 +452,33 @@ function Form() {
                     ))}
                 </div>
 
+                {/* === Investment Summary === */}
+                {/* === Investment Summary with CSS === */}
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-blue-800/50 border border-blue-400 rounded-lg p-4 text-center shadow-md">
+                    <p className="text-sm text-blue-200">💸 Total Invested</p>
+                    <p className="text-xl font-semibold text-white">
+                      ₹ {result.total_invested?.toLocaleString("en-IN")}
+                    </p>
+                  </div>
+
+                  <div className="bg-yellow-800/50 border border-yellow-400 rounded-lg p-4 text-center shadow-md">
+                    <p className="text-sm text-yellow-200">
+                      🧾 Uninvested Amount
+                    </p>
+                    <p className="text-xl font-semibold text-white">
+                      ₹ {result.uninvested_amount?.toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                </div>
+
                 {/* === Final Return Summary === */}
                 <div className="mt-8 text-xl font-bold text-green-400 text-center">
                   📈 Estimated Future Value: ₹
-                  {result.future_value.toLocaleString()}
+                  {result.future_value.toLocaleString("en-IN", {
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 1,
+                  })}
                 </div>
               </div>
             )}

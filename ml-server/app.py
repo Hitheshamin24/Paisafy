@@ -4,7 +4,6 @@ from flask_cors import CORS
 import joblib
 import numpy as np
 import yfinance as yf
-import difflib
 
 app = Flask(__name__)
 CORS(app)
@@ -14,26 +13,28 @@ model = joblib.load("model.pkl")
 
 def load_amfi_nav_dict():
     url = "https://www.amfiindia.com/spages/NAVAll.txt"
-    response = requests.get(url)
-    lines = response.text.splitlines()
+    headers = {'User-Agent': 'Mozilla/5.0'}
 
-    nav_data = {}
-    for line in lines:
-        if ';' not in line:
-            continue
-        parts = line.split(';')
-        if len(parts) >= 5:
-            scheme_name = parts[3].strip()
-            try:
-                nav = float(parts[4].strip())
-                nav_data[scheme_name] = nav
-            except:
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        lines = response.text.splitlines()
+
+        nav_data = {}
+        for line in lines:
+            if ';' not in line:
                 continue
-    return nav_data
-
-
-# Load once globally (optional caching)
-amfi_nav_dict = load_amfi_nav_dict()
+            parts = line.split(';')
+            if len(parts) >= 5:
+                scheme_name = parts[3].strip()
+                try:
+                    nav = float(parts[4].strip())
+                    nav_data[scheme_name] = nav
+                except:
+                    continue
+        return nav_data
+    except Exception as e:
+        print(f"Error loading AMFI NAV data: {e}")
+        return {}
 
 
 def get_nav_from_amfi(amfi_code):
@@ -47,7 +48,7 @@ def get_nav_from_amfi(amfi_code):
         parts = line.split(';')
         if len(parts) >= 6 and parts[0] == str(amfi_code):
             try:
-                return float(parts[4])  # NAV value
+                return float(parts[4])
             except ValueError:
                 return None
     return None
@@ -103,7 +104,6 @@ def predict():
         "HUL": "HINDUNILVR.NS"
     }
 
-    # Exact AMFI scheme name map (you can expand this)
     sip_funds = {
         "Nippon India Small Cap Fund - Growth": "113177",
         "HDFC Hybrid Equity Fund - IDCW ": "119061",
@@ -119,85 +119,117 @@ def predict():
         "Sensex ETF": "SENSEXBEES.NS"
     }
 
-    # Stocks
+    # Allocation weights
+    weights = {"stocks": 0, "etfs": 0, "sips": 0}
     if "Stocks" in preferred and risk in ["high", "medium"]:
-        stock_amt = amount * 0.7
-        limited_stocks = list(stock_map.items()) if risk == "high" else list(
-            stock_map.items())[:3]
-        per_stock = stock_amt / len(limited_stocks)
+        weights["stocks"] = 7
+    if "ETFs" in preferred:
+        weights["etfs"] = 2 if risk == "low" else 4 if risk == "medium" else 3
+    if "SIPs" in preferred:
+        weights["sips"] = 8 if risk == "low" else 6
 
-        for name, symbol in limited_stocks:
+    total_weight = sum(weights.values())
+    allocations = {
+        key: round((weights[key] / total_weight) * 100, 2) if total_weight else 0
+        for key in weights
+    }
+    recommendations["allocations"] = allocations
+
+    # ----------------- STOCKS -----------------
+    if "Stocks" in preferred and risk in ["high", "medium"]:
+        stock_amt = amount * (allocations["stocks"] / 100)
+        remaining_stock_amt = stock_amt
+        for name, symbol in stock_map.items():
+            if remaining_stock_amt <= 0:
+                break
             try:
                 ticker = yf.Ticker(symbol)
-                info = ticker.info
+                price = ticker.info.get("regularMarketPrice", 0)
+                if price <= 0 or remaining_stock_amt < price:
+                    continue
+                qty = int(remaining_stock_amt // price)
+                amt = round(qty * price, 2)
+                remaining_stock_amt -= amt
+
                 recommendations["stocks"].append({
-                    "name": info.get("longName", name),
-                    "symbol": info.get("symbol", symbol),
-                    # "description": info.get("longBusinessSummary", "No description available"),
-                    "price": info.get("regularMarketPrice", 0),
-                    "amount": round(per_stock, 2)
+                    "name": ticker.info.get("longName", name),
+                    "symbol": symbol,
+                    "price": price,
+                    "quantity": qty,
+                    "amount": amt
                 })
             except Exception as e:
-                print(f"Error fetching stock data for {name}: {e}")
-                recommendations["stocks"].append({
-                    "name": name,
-                    "symbol": symbol,
-                    "description": "Data not available",
-                    "price": 0,
-                    "amount": round(per_stock, 2)
-                })
+                print(f"Stock error: {e}")
+                continue
 
+    # ----------------- SIPs -----------------
     if "SIPs" in preferred:
-        sip_amt = amount * (0.8 if risk == "low" else 0.6)
-        sip_targets = list(sip_funds.keys())[
-            :2] if risk == "low" else list(sip_funds.keys())
-        per_sip = sip_amt / len(sip_targets)
+        sip_amt = amount * (allocations["sips"] / 100)
+        remaining_sip_amt = sip_amt
+        sip_targets = list(sip_funds.keys())[:2] if risk == "low" else list(sip_funds.keys())
 
         for sip_name in sip_targets:
             amfi_code = sip_funds[sip_name]
-            nav_price = get_nav_from_amfi(amfi_code)
+            price = get_nav_from_amfi(amfi_code)
+            if price and remaining_sip_amt >= price:
+                qty = int(remaining_sip_amt // price)
+                amt = round(qty * price, 2)
+                remaining_sip_amt -= amt
+            else:
+                qty, amt = 0, 0
 
             recommendations["sip"].append({
                 "name": sip_name,
                 "symbol": f"AMFI-{amfi_code}",
                 "description": "Real-time NAV from AMFI",
-                "price": round(nav_price, 2) if nav_price else "N/A",
-                "amount": round(per_sip, 2)
+                "price": round(price, 2) if price else "N/A",
+                "quantity": qty,
+                "amount": amt if price else "N/A"
             })
 
-    # ETFs
+    # ----------------- ETFs -----------------
     if "ETFs" in preferred:
-        etf_amt = (
-            amount * 0.2 if risk == "low"
-            else amount * 0.4 if risk == "medium"
-            else amount * 0.3
-        )
-        per_etf = etf_amt / len(etf_list)
+        etf_amt = amount * (allocations["etfs"] / 100)
+        remaining_etf_amt = etf_amt
 
         for etf in etf_list:
             symbol = etf_symbol_map.get(etf)
+            if not symbol or remaining_etf_amt <= 0:
+                continue
             try:
-                if symbol:
-                    ticker = yf.Ticker(symbol)
-                    info = ticker.info
-                    recommendations["etf"].append({
-                        "name": info.get("longName", etf),
-                        "symbol": symbol,
-                        # "description": info.get("longBusinessSummary", "No description available"),
-                        "price": info.get("regularMarketPrice", 0),
-                        "amount": round(per_etf, 2)
-                    })
-                else:
-                    raise ValueError("Symbol not found")
-            except Exception as e:
-                print(f"Error fetching ETF data for {etf}: {e}")
+                ticker = yf.Ticker(symbol)
+                price = ticker.info.get("regularMarketPrice", 0)
+                if price <= 0 or remaining_etf_amt < price:
+                    continue
+                qty = int(remaining_etf_amt // price)
+                amt = round(qty * price, 2)
+                remaining_etf_amt -= amt
+
                 recommendations["etf"].append({
-                    "name": etf,
-                    "symbol": etf,
-                    # "description": "Data not available",
-                    "price": 0,
-                    "amount": round(per_etf, 2)
+                    "name": ticker.info.get("longName", etf),
+                    "symbol": symbol,
+                    "price": price,
+                    "quantity": qty,
+                    "amount": amt
                 })
+            except Exception as e:
+                print(f"ETF error: {e}")
+                continue
+        total_invested = 0
+    for stock in recommendations["stocks"]:
+        total_invested += stock.get("amount", 0)
+
+    for sip in recommendations["sip"]:
+        if isinstance(sip.get("amount"), (int, float)):
+            total_invested += sip.get("amount", 0)
+
+    for etf in recommendations["etf"]:
+        total_invested += etf.get("amount", 0)
+
+    remaining_amount = round(amount - total_invested, 2)
+    recommendations["total_invested"] = round(total_invested, 2)
+    recommendations["uninvested_amount"] = remaining_amount
+
 
     return jsonify(recommendations)
 
