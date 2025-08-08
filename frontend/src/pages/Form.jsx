@@ -13,10 +13,34 @@ function Form() {
     preferredTypes: [],
     sectors: [],
   });
+  const getActualInvested = (label) => {
+    if (!result) return 0;
+    switch (label) {
+      case "Stocks":
+        return (
+          result.stocks?.reduce((sum, stock) => sum + (stock.amount || 0), 0) ||
+          0
+        );
+      case "ETFs":
+        return (
+          result.etf?.reduce((sum, etf) => sum + (etf.amount || 0), 0) || 0
+        );
+      case "SIPs":
+        return (
+          result.sip?.reduce(
+            (sum, sip) => sum + parseFloat(sip.amount || 0),
+            0
+          ) || 0
+        );
+      default:
+        return 0;
+    }
+  };
 
   const [suggestion, setSuggestion] = useState("");
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("Stocks");
+  const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,6 +85,8 @@ function Form() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true); // Start loading
+    setResult(null); // Optional: clear previous result
     try {
       const res = await axios.post("http://localhost:5000/api/recommend", {
         ...formData,
@@ -71,7 +97,9 @@ function Form() {
       setResult(res.data);
     } catch (err) {
       console.error(err);
-      alert("Error fetching recommendation");
+      alert("Error generating recommendations");
+    } finally {
+      setLoading(false); // End loading
     }
   };
 
@@ -269,17 +297,30 @@ function Form() {
               <div className="md:col-span-2">
                 <button
                   type="submit"
-                  className="w-full bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white font-semibold py-3 rounded-lg shadow-lg"
+                  disabled={loading}
+                  className={`w-full bg-blue-600 hover:bg-blue-700 transition-colors duration-200 text-white font-semibold py-3 rounded-lg shadow-lg cursor-pointer ${
+                    loading ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
                 >
-                  Generate Recommendations
+                  {loading ? "Please wait..." : "Generate Recommendations"}
                 </button>
               </div>
             </form>
+            {loading && (
+              <div className="mt-10 flex justify-center items-center gap-2 text-blue-600 font-semibold text-lg">
+                <span>Generating recommendations</span>
+                <span className="flex space-x-1">
+                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></span>
+                </span>
+              </div>
+            )}
 
             {result && (
               <div className="mt-12">
                 {/* === Portfolio Allocation Section === */}
-                <div className="bg-[#1f2937] p-6 rounded-xl shadow-lg">
+                <div className="bg-[#1f2937] p-6 rounded-xl shadow-lg animate-fade-in-up">
                   <h3 className="text-white text-lg font-semibold mb-4">
                     Portfolio Allocation
                   </h3>
@@ -288,17 +329,6 @@ function Form() {
                     const totalAmount = Number(formData.amountToInvest || 0);
                     return (
                       <>
-                        <pre className="text-white text-xs">
-                          {JSON.stringify(
-                            {
-                              amountToInvest: formData.amountToInvest,
-                              allocations: result.allocations,
-                            },
-                            null,
-                            2
-                          )}
-                        </pre>
-
                         <div className="space-y-6">
                           {[
                             {
@@ -317,10 +347,8 @@ function Form() {
                               color: "bg-yellow-500",
                             },
                           ].map((item) => {
-                            const amount = (
-                              (item.value / 100) *
-                              totalAmount
-                            ).toFixed(0);
+                            const invested = getActualInvested(item.label);
+
                             return (
                               <div key={item.label} className="text-sm">
                                 <div className="flex justify-between mb-1">
@@ -340,7 +368,7 @@ function Form() {
                                 </div>
 
                                 <div className="text-gray-400 mt-2 text-center font-semibold">
-                                  ₹{parseInt(amount).toLocaleString("en-IN")} (
+                                  ₹{invested.toLocaleString("en-IN")} (
                                   {item.value.toFixed(1)}%)
                                 </div>
                               </div>
@@ -358,7 +386,7 @@ function Form() {
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`px-4 py-2 rounded-md transition ${
+                      className={`px-4 py-2 rounded-md transition  cursor-pointer ${
                         activeTab === tab
                           ? "bg-blue-600 text-white"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -369,7 +397,7 @@ function Form() {
                   ))}
                 </div>
 
-                {/* === Recommendation Cards === */}
+                {/*  Recommendation Cards  */}
                 <div className="mt-6 grid gap-4">
                   {activeTab === "Stocks" &&
                     result.stocks.map((stock, i) => (
@@ -452,8 +480,7 @@ function Form() {
                     ))}
                 </div>
 
-                {/* === Investment Summary === */}
-                {/* === Investment Summary with CSS === */}
+                {/*  Investment Summary   */}
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="bg-blue-800/50 border border-blue-400 rounded-lg p-4 text-center shadow-md">
                     <p className="text-sm text-blue-200">💸 Total Invested</p>
