@@ -42,6 +42,19 @@ function Form() {
   const [activeTab, setActiveTab] = useState("Stocks");
   const [loading, setLoading] = useState(false);
 
+  const handleSaveRecommendation = async () => {
+    try {
+      await axios.post("http://localhost:5000/api/save-recommendation", {
+        formData,
+        result,
+      });
+      alert("Recommendation saved successfully!");
+    } catch (error) {
+      console.error(error);
+      alert("Failed to save recommendation");
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     const updateForm = { ...formData, [name]: value };
@@ -507,10 +520,17 @@ function Form() {
                     maximumFractionDigits: 1,
                   })}
                 </div>
+                {/* Save Recommendation Button */}
+                <div className="mt-6">
+                  <button
+                    onClick={handleSaveRecommendation}
+                    className="w-full bg-green-600 hover:bg-green-700 transition-colors duration-200 text-white font-semibold py-3 rounded-lg shadow-lg"
+                  >
+                    Save Recommendation
+                  </button>
+                </div>
               </div>
-              
             )}
-            
           </motion.div>
         </div>
       </SignedIn>
