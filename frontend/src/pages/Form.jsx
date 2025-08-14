@@ -1,8 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion } from "framer-motion";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
-
+import { useAuth, useUser } from "@clerk/clerk-react";
 function Form() {
   const [formData, setFormData] = useState({
     income: "",
@@ -41,14 +41,45 @@ function Form() {
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("Stocks");
   const [loading, setLoading] = useState(false);
+  const { getToken } = useAuth(); // Clerk hook
+  const { user } = useUser();
+  const [recommendationExists, setRecommendationExists] = useState(false);
+  useEffect(() => {
+    const checkRecommendation = async () => {
+      if (!user) return;
+      try {
+        const token = await getToken();
+        const res = await axios.get(
+          `http://localhost:5000/api/check-recommendation/${user.id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        setRecommendationExists(res.data.exists);
+      } catch (err) {
+        console.error("Error checking recommendation:", err);
+      }
+    };
+
+    checkRecommendation();
+  }, [user, getToken]);
 
   const handleSaveRecommendation = async () => {
     try {
-      await axios.post("http://localhost:5000/api/save-recommendation", {
-        formData,
-        result,
-      });
-      alert("Recommendation saved successfully!");
+      const token = await getToken(); // Clerk session token
+      await axios.post(
+        "http://localhost:5000/api/save-recommendation",
+        { formData, result }, // no userId needed
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      alert(
+        recommendationExists
+          ? "Recommendation modified successfully!"
+          : "Recommendation saved successfully!"
+      );
+      setRecommendationExists(true);
     } catch (error) {
       console.error(error);
       alert("Failed to save recommendation");
@@ -96,25 +127,43 @@ function Form() {
     });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); // Start loading
-    setResult(null); // Optional: clear previous result
-    try {
-      const res = await axios.post("http://localhost:5000/api/recommend", {
-        ...formData,
-        income: Number(formData.income),
-        amountToInvest: Number(formData.amountToInvest),
-        horizon: Number(formData.horizon),
-      });
-      setResult(res.data);
-    } catch (err) {
-      console.error(err);
-      alert("Error generating recommendations");
-    } finally {
-      setLoading(false); // End loading
-    }
-  };
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  if (!user) return; // Make sure user is loaded
+  setLoading(true);
+  setResult(null);
+
+  try {
+    const res = await axios.post("http://localhost:5000/api/recommend", {
+      ...formData,
+      income: Number(formData.income),
+      amountToInvest: Number(formData.amountToInvest),
+      horizon: Number(formData.horizon),
+    });
+
+    setResult(res.data);
+
+    // Check if this user already has a saved recommendation
+    const token = await getToken();
+    const checkRes = await axios.get(
+      `http://localhost:5000/api/check-recommendation/${user.id}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setRecommendationExists(checkRes.data.exists);
+  } catch (err) {
+    console.error(err.response?.data || err.message);
+    alert(
+      "Error generating recommendations: " +
+        (err.response?.data?.message || err.message)
+    );
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <>
@@ -526,7 +575,9 @@ function Form() {
                     onClick={handleSaveRecommendation}
                     className="w-full bg-green-600 hover:bg-green-700 transition-colors duration-200 text-white font-semibold py-3 rounded-lg shadow-lg"
                   >
-                    Save Recommendation
+                    {recommendationExists
+                      ? "Modify Recommendation "
+                      : "Save Recommendation"}
                   </button>
                 </div>
               </div>

@@ -26,6 +26,7 @@ const Home = () => {
           { headers: { Authorization: `Bearer ${token}` } }
         );
         console.log("User saved or already exists");
+        console.log(token);
         console.log("Backend response:", res.data);
       } catch (error) {
         console.error("Error saving user:", error);
