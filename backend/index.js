@@ -28,19 +28,7 @@ app.post("/api/recommend", async (req, res) => {
   }
 });
 
-// app.get("/test-save-user", async (req, res) => {
-//   try {
-//     const user = new User({
-//       clerkUserId: "test123",
-//       email: "test@test.com",
-//       name: "Test User"
-//     });
-//     await user.save();
-//     res.json({ message: "User saved", user });
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// });
+
 
 
 // Use recommendation routes
