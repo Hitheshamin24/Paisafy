@@ -127,43 +127,42 @@ function Form() {
     });
   };
 
- const handleSubmit = async (e) => {
-  e.preventDefault();
-  if (!user) return; // Make sure user is loaded
-  setLoading(true);
-  setResult(null);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!user) return; // Make sure user is loaded
+    setLoading(true);
+    setResult(null);
 
-  try {
-    const res = await axios.post("http://localhost:5000/api/recommend", {
-      ...formData,
-      income: Number(formData.income),
-      amountToInvest: Number(formData.amountToInvest),
-      horizon: Number(formData.horizon),
-    });
+    try {
+      const res = await axios.post("http://localhost:5000/api/recommend", {
+        ...formData,
+        income: Number(formData.income),
+        amountToInvest: Number(formData.amountToInvest),
+        horizon: Number(formData.horizon),
+      });
 
-    setResult(res.data);
+      setResult(res.data);
 
-    // Check if this user already has a saved recommendation
-    const token = await getToken();
-    const checkRes = await axios.get(
-      `http://localhost:5000/api/check-recommendation/${user.id}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+      // Check if this user already has a saved recommendation
+      const token = await getToken();
+      const checkRes = await axios.get(
+        `http://localhost:5000/api/check-recommendation/${user.id}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-    setRecommendationExists(checkRes.data.exists);
-  } catch (err) {
-    console.error(err.response?.data || err.message);
-    alert(
-      "Error generating recommendations: " +
-        (err.response?.data?.message || err.message)
-    );
-  } finally {
-    setLoading(false);
-  }
-};
-
+      setRecommendationExists(checkRes.data.exists);
+    } catch (err) {
+      console.error(err.response?.data || err.message);
+      alert(
+        "Error generating recommendations: " +
+          (err.response?.data?.message || err.message)
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
@@ -562,13 +561,44 @@ function Form() {
                 </div>
 
                 {/* === Final Return Summary === */}
-                <div className="mt-8 text-xl font-bold text-green-400 text-center">
-                  📈 Estimated Future Value: ₹
-                  {result.future_value.toLocaleString("en-IN", {
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 1,
-                  })}
+                <div className="mt-8 text-lg sm:text-xl font-bold text-green-400 text-center sm:text-left space-y-2 bg-gray-800 p-4 rounded-2xl shadow-lg max-w-md mx-auto">
+                  {/* 💰 Total Invested */}
+                  <p className="flex items-center gap-2">
+                    💰 <span>Total Invested:</span>
+                    <span className="text-white ml-auto">
+                      ₹{result.total_principal.toLocaleString("en-IN")}
+                    </span>
+                  </p>
+
+                  {/* 📊 Expected Return */}
+                  <p className="flex items-center gap-2">
+                    📊 <span>Expected Return:</span>
+                    <span className="text-white ml-auto">
+                      {result.expected_return.toFixed(2)}%
+                    </span>
+                  </p>
+
+                  {/* 💵 Profit */}
+                  <p className="flex items-center gap-2">
+                    💵 <span>Profit:</span>
+                    <span className="text-white ml-auto">
+                      ₹{result.profit.toLocaleString("en-IN")}
+                    </span>
+                  </p>
+
+                  {/* 📈 Future Value */}
+                  <p className="flex items-center gap-2 border-t border-gray-600 pt-2 mt-2">
+                    📈 <span>Estimated Future Value:</span>
+                    <span className="text-white ml-auto">
+                      ₹
+                      {result.future_value.toLocaleString("en-IN", {
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 1,
+                      })}
+                    </span>
+                  </p>
                 </div>
+
                 {/* Save Recommendation Button */}
                 <div className="mt-6">
                   <button

@@ -1,14 +1,11 @@
 import requests
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import joblib
 import numpy as np
 import yfinance as yf
 
 app = Flask(__name__)
 CORS(app)
-
-model = joblib.load("model.pkl")
 
 
 def load_amfi_nav_dict():
@@ -55,12 +52,17 @@ def get_nav_from_amfi(amfi_code):
 
 
 def calculate_future_value(monthly_investment, annual_return_percent, years):
-    r = (annual_return_percent / 100) / 12
-    n = years * 12
-    if r == 0:
-        return round(monthly_investment * n, 2)
-    fv = monthly_investment * (((1 + r) ** n - 1) / r) * (1 + r)
-    return round(fv, 2)
+    r = annual_return_percent / 100
+    months = years * 12
+    monthly_rate = r / 12  
+    total_principal = monthly_investment * months
+    
+    # SIP future value formula
+    fv = monthly_investment * (((1 + monthly_rate) ** months - 1) * (1 + monthly_rate) / monthly_rate)
+    profit = fv - total_principal
+    
+    return round(fv, 2), round(total_principal, 2), round(profit, 2)
+
 
 
 @app.route('/predict', methods=['POST'])
@@ -75,19 +77,21 @@ def predict():
     except (TypeError, ValueError):
         return jsonify({"error": "Invalid input values"}), 400
 
-    risk_map = {"low": 0, "medium": 1, "high": 2}
-    risk_encoded = risk_map.get(risk, 1)
-
-    features = np.array([[income, amount, risk_encoded, horizon]])
-    predicted_return = float(round(model.predict(features)[0], 2))
-    predicted_return = max(0, min(predicted_return, 30))
-    future_value = calculate_future_value(amount, predicted_return, horizon)
-
+    if risk=="high":
+        annual_return=20
+    elif risk=="low":
+        annual_return=10
+    else:
+        annual_return=15
+    future_value,total_invested,profit = calculate_future_value(amount, annual_return, horizon)
+    
     recommendations = {
         "stocks": [],
         "sip": [],
         "etf": [],
-        "expected_return": predicted_return,
+        "total_principal":total_invested,
+        "expected_return": annual_return,
+        "profit":profit,
         "future_value": future_value
     }
 
@@ -118,6 +122,7 @@ def predict():
         "Nifty Next 50 ETF": "JUNIORBEES.NS",
         "Sensex ETF": "SENSEXBEES.NS"
     }
+    total_invested = 0
 
     # Allocation weights
     weights = {"stocks": 0, "etfs": 0, "sips": 0}
@@ -215,7 +220,7 @@ def predict():
             except Exception as e:
                 print(f"ETF error: {e}")
                 continue
-        total_invested = 0
+        
     for stock in recommendations["stocks"]:
         total_invested += stock.get("amount", 0)
 
