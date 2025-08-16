@@ -18,16 +18,21 @@ function Form() {
     switch (label) {
       case "Stocks":
         return (
-          result.stocks?.reduce((sum, stock) => sum + (stock.amount || 0), 0) ||
-          0
+          result.recommendations?.stocks?.reduce(
+            (sum, stock) => sum + (stock.amount || 0),
+            0
+          ) || 0
         );
       case "ETFs":
         return (
-          result.etf?.reduce((sum, etf) => sum + (etf.amount || 0), 0) || 0
+          result.recommendations?.etf?.reduce(
+            (sum, etf) => sum + (etf.amount || 0),
+            0
+          ) || 0
         );
       case "SIPs":
         return (
-          result.sip?.reduce(
+          result.recommendations?.sip?.reduce(
             (sum, sip) => sum + parseFloat(sip.amount || 0),
             0
           ) || 0
@@ -36,7 +41,6 @@ function Form() {
         return 0;
     }
   };
-
   const [suggestion, setSuggestion] = useState("");
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("Stocks");
@@ -394,17 +398,17 @@ function Form() {
                           {[
                             {
                               label: "Stocks",
-                              value: result.allocations?.stocks || 0,
+                              value: result.allocations?.stocks?.percent || 0,
                               color: "bg-blue-500",
                             },
                             {
                               label: "ETFs",
-                              value: result.allocations?.etfs || 0,
+                              value: result.allocations?.etf?.percent || 0,
                               color: "bg-green-500",
                             },
                             {
                               label: "SIPs",
-                              value: result.allocations?.sips || 0,
+                              value: result.allocations?.sip?.percent || 0,
                               color: "bg-yellow-500",
                             },
                           ].map((item) => {
@@ -461,7 +465,7 @@ function Form() {
                 {/*  Recommendation Cards  */}
                 <div className="mt-6 grid gap-4">
                   {activeTab === "Stocks" &&
-                    result.stocks.map((stock, i) => (
+                    result?.recommendations?.stocks?.map((stock, i) => (
                       <div
                         key={i}
                         className="bg-[#111827] rounded-xl border-l-4 border-blue-500 p-4 shadow-lg"
@@ -489,7 +493,7 @@ function Form() {
                     ))}
 
                   {activeTab === "ETFs" &&
-                    result.etf.map((etf, i) => (
+                    result?.recommendations?.etf?.map((etf, i) => (
                       <div
                         key={i}
                         className="bg-[#111827] rounded-xl border-l-4 border-blue-500 p-4 shadow-lg"
@@ -515,7 +519,7 @@ function Form() {
                     ))}
 
                   {activeTab === "SIPs" &&
-                    result.sip.map((sip, i) => (
+                    result?.recommendations?.sip.map((sip, i) => (
                       <div
                         key={i}
                         className="bg-[#111827] rounded-xl border-l-4 border-blue-500 p-4 shadow-lg"
