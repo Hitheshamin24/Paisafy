@@ -13,34 +13,42 @@ function Form() {
     preferredTypes: [],
     sectors: [],
   });
-  const getActualInvested = (label) => {
-    if (!result) return 0;
-    switch (label) {
-      case "Stocks":
-        return (
-          result.recommendations?.stocks?.reduce(
-            (sum, stock) => sum + (stock.amount || 0),
-            0
-          ) || 0
-        );
-      case "ETFs":
-        return (
-          result.recommendations?.etf?.reduce(
-            (sum, etf) => sum + (etf.amount || 0),
-            0
-          ) || 0
-        );
-      case "SIPs":
-        return (
-          result.recommendations?.sip?.reduce(
-            (sum, sip) => sum + parseFloat(sip.amount || 0),
-            0
-          ) || 0
-        );
-      default:
-        return 0;
-    }
-  };
+ const getActualInvested = (label) => {
+  if (!result) return 0;
+  switch (label) {
+    case "Stocks":
+      return (
+        result.recommendations?.stocks?.reduce(
+          (sum, stock) => sum + (stock.amount || 0),
+          0
+        ) || 0
+      );
+    case "ETFs":
+      return (
+        result.recommendations?.etf?.reduce(
+          (sum, etf) => sum + (etf.amount || 0),
+          0
+        ) || 0
+      );
+    case "SIPs":
+      return (
+        result.recommendations?.sip?.reduce(
+          (sum, sip) => {
+            // Handle "N/A" and other non-numeric values
+            const amount = sip.amount;
+            if (amount === "N/A" || amount === null || amount === undefined) {
+              return sum + 0;
+            }
+            const numericAmount = parseFloat(amount);
+            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
+          },
+          0
+        ) || 0
+      );
+    default:
+      return 0;
+  }
+};
   const [suggestion, setSuggestion] = useState("");
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("Stocks");

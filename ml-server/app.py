@@ -298,29 +298,104 @@ def calculate_future_value(monthly_investment, annual_return_percent, years):
     
     return round(fv, 2), round(total_principal, 2), round(profit, 2)
 
-def get_stock_recommendations(amount, allocation_percentage):
-    """Get stock recommendations with real-time prices"""
+def get_stock_recommendations(amount, allocation_percentage, preferred_sectors=None):
+    """Get stock recommendations with real-time prices based on sector preferences"""
+    # Comprehensive stock mapping with sectors
     stock_map = {
-        "Reliance Industries": "RELIANCE.NS",
-        "TCS": "TCS.NS",
-        "Infosys": "INFY.NS",
-        "ICICI Bank": "ICICIBANK.NS",
-        "HDFC Bank": "HDFCBANK.NS",
-        "SBI": "SBIN.NS",
-        "Axis Bank": "AXISBANK.NS",
-        "L&T": "LT.NS",
-        "ITC": "ITC.NS",
-        "HUL": "HINDUNILVR.NS"
+        # IT Sector
+        "TCS": {"symbol": "TCS.NS", "sector": "IT"},
+        "Infosys": {"symbol": "INFY.NS", "sector": "IT"},
+        "HCL Technologies": {"symbol": "HCLTECH.NS", "sector": "IT"},
+        "Wipro": {"symbol": "WIPRO.NS", "sector": "IT"},
+        
+        # Banking Sector
+        "ICICI Bank": {"symbol": "ICICIBANK.NS", "sector": "Banking"},
+        "HDFC Bank": {"symbol": "HDFCBANK.NS", "sector": "Banking"},
+        "SBI": {"symbol": "SBIN.NS", "sector": "Banking"},
+        "Axis Bank": {"symbol": "AXISBANK.NS", "sector": "Banking"},
+        "Kotak Mahindra Bank": {"symbol": "KOTAKBANK.NS", "sector": "Banking"},
+        
+        # FMCG Sector
+        "HUL": {"symbol": "HINDUNILVR.NS", "sector": "FMCG"},
+        "ITC": {"symbol": "ITC.NS", "sector": "FMCG"},
+        "Nestle India": {"symbol": "NESTLEIND.NS", "sector": "FMCG"},
+        "Britannia": {"symbol": "BRITANNIA.NS", "sector": "FMCG"},
+        
+        # Pharma Sector
+        "Sun Pharma": {"symbol": "SUNPHARMA.NS", "sector": "Pharma"},
+        "Dr Reddys Labs": {"symbol": "DRREDDY.NS", "sector": "Pharma"},
+        "Cipla": {"symbol": "CIPLA.NS", "sector": "Pharma"},
+        "Divi's Labs": {"symbol": "DIVISLAB.NS", "sector": "Pharma"},
+        
+        # Energy Sector
+        "Reliance Industries": {"symbol": "RELIANCE.NS", "sector": "Energy"},
+        "ONGC": {"symbol": "ONGC.NS", "sector": "Energy"},
+        "IOC": {"symbol": "IOC.NS", "sector": "Energy"},
+        "BPCL": {"symbol": "BPCL.NS", "sector": "Energy"},
+        
+        # Automobile Sector
+        "Maruti Suzuki": {"symbol": "MARUTI.NS", "sector": "Automobile"},
+        "Tata Motors": {"symbol": "TATAMOTORS.NS", "sector": "Automobile"},
+        "Bajaj Auto": {"symbol": "BAJAJ-AUTO.NS", "sector": "Automobile"},
+        "Mahindra & Mahindra": {"symbol": "M&M.NS", "sector": "Automobile"},
+        
+        # Healthcare Sector
+        "Apollo Hospitals": {"symbol": "APOLLOHOSP.NS", "sector": "Healthcare"},
+        "Fortis Healthcare": {"symbol": "FORTIS.NS", "sector": "Healthcare"},
+        "Max Healthcare": {"symbol": "MAXHEALTH.NS", "sector": "Healthcare"},
+        
+        # Infrastructure/General
+        "L&T": {"symbol": "LT.NS", "sector": "Infrastructure"},
+        "UltraTech Cement": {"symbol": "ULTRACEMCO.NS", "sector": "Infrastructure"},
     }
     
     recommendations = []
     stock_amt = amount * (allocation_percentage / 100)
     remaining_stock_amt = stock_amt
     
-    for name, symbol in stock_map.items():
-        if remaining_stock_amt <= 0:
+    print(f"Stock recommendations - Selected sectors: {preferred_sectors}")
+    
+    # If preferred sectors are specified, ensure we get stocks from ALL selected sectors
+    if preferred_sectors and len(preferred_sectors) > 0:
+        # Group stocks by sector
+        stocks_by_sector = {}
+        for name, data in stock_map.items():
+            sector = data["sector"]
+            if sector in preferred_sectors:
+                if sector not in stocks_by_sector:
+                    stocks_by_sector[sector] = []
+                stocks_by_sector[sector].append((name, data))
+        
+        print(f"Stocks grouped by sector: {list(stocks_by_sector.keys())}")
+        
+        # Calculate how much to invest per sector (equal distribution)
+        sectors_found = list(stocks_by_sector.keys())
+        if not sectors_found:
+            print("No stocks found for selected sectors, using default mix")
+            # Fallback to top performers if no sector matches
+            selected_stocks = list(stock_map.items())[:8]
+        else:
+            selected_stocks = []
+            amount_per_sector = stock_amt / len(sectors_found)
+            
+            # Select stocks from each preferred sector
+            for sector in sectors_found:
+                sector_stocks = stocks_by_sector[sector]
+                # Take up to 2-3 stocks per sector to ensure diversification
+                stocks_per_sector = min(3, len(sector_stocks))
+                selected_stocks.extend(sector_stocks[:stocks_per_sector])
+                print(f"Selected {stocks_per_sector} stocks from {sector} sector")
+    else:
+        # Default to a diversified mix across all sectors
+        selected_stocks = list(stock_map.items())[:10]
+    
+    # Now process the selected stocks
+    for name, data in selected_stocks:
+        if remaining_stock_amt <= 100:  # Stop if remaining amount is too small
             break
+            
         try:
+            symbol = data["symbol"]
             ticker = yf.Ticker(symbol)
             info = ticker.info
             price = info.get("regularMarketPrice") or info.get("currentPrice", 0)
@@ -328,95 +403,355 @@ def get_stock_recommendations(amount, allocation_percentage):
             if price <= 0 or remaining_stock_amt < price:
                 continue
                 
-            qty = int(remaining_stock_amt // price)
+            # Calculate investment amount for this stock
+            # Distribute remaining amount across remaining stocks
+            max_investment = remaining_stock_amt * 0.3  # Max 30% in one stock
+            target_investment = min(max_investment, remaining_stock_amt / 2)  # Or half of remaining
+            
+            qty = int(target_investment // price)
+            if qty == 0:
+                qty = 1  # Buy at least 1 share if affordable
+                
             amt = round(qty * price, 2)
-            remaining_stock_amt -= amt
-
-            recommendations.append({
-                "name": info.get("longName", name),
-                "symbol": symbol,
-                "price": price,
-                "quantity": qty,
-                "amount": amt
-            })
+            
+            if amt > remaining_stock_amt:
+                amt = remaining_stock_amt
+                qty = int(amt // price)
+                amt = round(qty * price, 2)
+            
+            if qty > 0 and amt > 0:
+                remaining_stock_amt -= amt
+                
+                recommendations.append({
+                    "name": info.get("longName", name),
+                    "symbol": symbol,
+                    "sector": data["sector"],
+                    "price": price,
+                    "quantity": qty,
+                    "amount": amt,
+                    "description": f"{data['sector']} sector stock"
+                })
+                print(f"Added stock: {name} from {data['sector']} sector - Amount: ₹{amt}")
+                
         except Exception as e:
             print(f"Error fetching stock data for {symbol}: {e}")
             continue
     
     return recommendations
 
-def get_etf_recommendations(amount, allocation_percentage):
-    """Get ETF recommendations with real-time prices"""
-    etf_symbol_map = {
-        "Nifty 50 ETF": "NIFTYBEES.NS",
-        "Nifty Next 50 ETF": "JUNIORBEES.NS",
-        "Sensex ETF": "SENSEXBEES.NS"
+def get_etf_recommendations(amount, allocation_percentage, preferred_sectors=None):
+    """Get ETF recommendations with real-time prices based on sector preferences"""
+    # Comprehensive ETF mapping with sectors
+    etf_map = {
+        # Broad Market ETFs
+        "Nifty 50 ETF": {"symbol": "NIFTYBEES.NS", "sector": "Broad Market"},
+        "Nifty Next 50 ETF": {"symbol": "JUNIORBEES.NS", "sector": "Broad Market"},
+        "Sensex ETF": {"symbol": "SENSEXBEES.NS", "sector": "Broad Market"},
+        
+        # Sector-specific ETFs
+        "Nifty IT ETF": {"symbol": "NIFTIETF.NS", "sector": "IT"},
+        "Nifty Bank ETF": {"symbol": "BANKBEES.NS", "sector": "Banking"},
+        "Nifty Pharma ETF": {"symbol": "PHARMABEES.NS", "sector": "Pharma"},
+        "Nifty FMCG ETF": {"symbol": "FMCGBEES.NS", "sector": "FMCG"},
+        "Nifty Auto ETF": {"symbol": "AUTOBEES.NS", "sector": "Automobile"},
+        "Nifty Energy ETF": {"symbol": "ENERGYBEES.NS", "sector": "Energy"},
     }
     
     recommendations = []
     etf_amt = amount * (allocation_percentage / 100)
     remaining_etf_amt = etf_amt
+    
+    print(f"ETF recommendations - Selected sectors: {preferred_sectors}")
+    
+    selected_etfs = []
+    
+    if preferred_sectors and len(preferred_sectors) > 0:
+        # First, add sector-specific ETFs for each preferred sector
+        for sector in preferred_sectors:
+            for name, data in etf_map.items():
+                if data["sector"] == sector:
+                    selected_etfs.append((name, data))
+                    print(f"Added sector ETF: {name} for {sector}")
+        
+        # Always add at least one broad market ETF for diversification
+        broad_market_etf = list(etf_map.items())[0]  # First broad market ETF
+        if broad_market_etf not in selected_etfs:
+            selected_etfs.insert(0, broad_market_etf)  # Add at the beginning
+            print(f"Added broad market ETF: {broad_market_etf[0]}")
+    else:
+        # Default to broad market ETFs
+        selected_etfs = [(name, data) for name, data in etf_map.items() 
+                        if data["sector"] == "Broad Market"]
 
-    for etf_name, symbol in etf_symbol_map.items():
+    # If we have multiple ETFs, distribute the investment
+    if len(selected_etfs) > 1:
+        amount_per_etf = etf_amt / len(selected_etfs)
+    else:
+        amount_per_etf = etf_amt
+
+    for etf_name, data in selected_etfs:
         if remaining_etf_amt <= 0:
             break
+            
         try:
+            symbol = data["symbol"]
             ticker = yf.Ticker(symbol)
             info = ticker.info
             price = info.get("regularMarketPrice") or info.get("currentPrice", 0)
             
-            if price <= 0 or remaining_etf_amt < price:
+            if price <= 0:
                 continue
                 
-            qty = int(remaining_etf_amt // price)
+            # Use proportional amount or remaining amount, whichever is smaller
+            target_amount = min(amount_per_etf, remaining_etf_amt)
+            qty = int(target_amount // price)
+            
+            if qty == 0 and remaining_etf_amt >= price:
+                qty = 1  # Buy at least 1 unit if affordable
+                
             amt = round(qty * price, 2)
-            remaining_etf_amt -= amt
+            
+            if amt > remaining_etf_amt:
+                amt = remaining_etf_amt
+                qty = int(amt // price)
+                amt = round(qty * price, 2)
+            
+            if qty > 0 and amt > 0:
+                remaining_etf_amt -= amt
+                
+                recommendations.append({
+                    "name": info.get("longName", etf_name),
+                    "symbol": symbol,
+                    "sector": data["sector"],
+                    "price": price,
+                    "quantity": qty,
+                    "amount": amt,
+                    "description": f"ETF tracking {data['sector']} sector"
+                })
+                print(f"Added ETF: {etf_name} from {data['sector']} - Amount: ₹{amt}")
 
-            recommendations.append({
-                "name": info.get("longName", etf_name),
-                "symbol": symbol,
-                "price": price,
-                "quantity": qty,
-                "amount": amt
-            })
         except Exception as e:
             print(f"Error fetching ETF data for {symbol}: {e}")
             continue
 
     return recommendations
 
-def get_sip_recommendations(amount, allocation_percentage):
-    """Get SIP recommendations with real-time NAV"""
+def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=None, risk_level="medium"):
+    """Get SIP recommendations with real-time NAV based on sector preferences and risk"""
+    # Enhanced SIP mapping with better sector coverage
     sip_funds = {
-        "Nippon India Small Cap Fund - Growth": "113177",
-        "HDFC Hybrid Equity Fund - IDCW": "119061",
-        "ICICI Prudential US Bluechip Equity Fund - Direct Plan -IDCW": "120185",
+        # IT Sector funds
+        "ICICI Prudential Technology Fund - Direct Growth": {
+            "code": "120505", 
+            "sector": "IT", 
+            "risk": "high",
+            "category": "Sector"
+        },
+        "Franklin India Technology Fund - Direct Growth": {
+            "code": "112148", 
+            "sector": "IT", 
+            "risk": "high",
+            "category": "Sector"
+        },
+        
+        # Banking/Financial Sector funds
+        "ICICI Prudential Banking & PSU Debt Fund - Direct Growth": {
+            "code": "120276", 
+            "sector": "Banking", 
+            "risk": "low",
+            "category": "Debt"
+        },
+        "SBI Banking & PSU Debt Fund - Direct Growth": {
+            "code": "128690", 
+            "sector": "Banking", 
+            "risk": "low",
+            "category": "Debt"
+        },
+        
+        # Pharma/Healthcare funds
+        "ICICI Prudential Pharma Healthcare - Direct Growth": {
+            "code": "120513", 
+            "sector": "Pharma", 
+            "risk": "high",
+            "category": "Sector"
+        },
+        "SBI Healthcare Opportunities Fund - Direct Growth": {
+            "code": "119718", 
+            "sector": "Healthcare", 
+            "risk": "high",
+            "category": "Sector"
+        },
+        
+        # FMCG funds
+        "ICICI Prudential FMCG Fund - Direct Growth": {
+            "code": "120267", 
+            "sector": "FMCG", 
+            "risk": "medium",
+            "category": "Sector"
+        },
+        
+        # Auto/Automobile funds
+        "Nippon India Power & Infra Fund - Direct Growth": {
+            "code": "113141", 
+            "sector": "Automobile", 
+            "risk": "high",
+            "category": "Sector"
+        },
+        
+        # Energy funds
+        "ICICI Prudential Infrastructure Fund - Direct Growth": {
+            "code": "120274", 
+            "sector": "Energy", 
+            "risk": "high",
+            "category": "Sector"
+        },
+        
+        # Balanced/Hybrid - Medium Risk (for diversification)
+        "HDFC Hybrid Equity Fund - Direct Growth": {
+            "code": "119061", 
+            "sector": "Balanced", 
+            "risk": "medium",
+            "category": "Hybrid"
+        },
+        "ICICI Prudential Balanced Advantage Fund - Direct Growth": {
+            "code": "120244", 
+            "sector": "Balanced", 
+            "risk": "medium",
+            "category": "Hybrid"
+        },
+        
+        # Large Cap - Low to Medium Risk
+        "Axis Bluechip Fund - Direct Growth": {
+            "code": "120503", 
+            "sector": "Large Cap", 
+            "risk": "medium",
+            "category": "Equity"
+        },
+        
+        # Small Cap - High Risk
+        "Nippon India Small Cap Fund - Growth": {
+            "code": "113177", 
+            "sector": "Small Cap", 
+            "risk": "high",
+            "category": "Equity"
+        }
     }
+    
+    print(f"SIP recommendations - Selected sectors: {preferred_sectors}, Risk level: {risk_level}")
+    
+    # Risk-based filtering
+    risk_preference = {
+        "low": ["low", "medium"], 
+        "medium": ["low", "medium", "high"], 
+        "high": ["medium", "high"]
+    }
+    acceptable_risks = risk_preference.get(risk_level, ["medium"])
+    
+    selected_funds = []
+    
+    if preferred_sectors and len(preferred_sectors) > 0:
+        # Enhanced sector mapping
+        sector_mapping = {
+            "IT": ["IT", "Technology"],
+            "Banking": ["Banking", "Financial"],
+            "Pharma": ["Pharma", "Healthcare"],
+            "FMCG": ["FMCG", "Consumer"],
+            "Energy": ["Energy", "Infrastructure", "Power"],
+            "Automobile": ["Automobile", "Auto", "Infrastructure"],
+            "Healthcare": ["Healthcare", "Pharma"]
+        }
+        
+        # Find funds for each preferred sector
+        for pref_sector in preferred_sectors:
+            sector_funds_found = []
+            mapped_sectors = sector_mapping.get(pref_sector, [pref_sector])
+            
+            for name, data in sip_funds.items():
+                if data["risk"] in acceptable_risks:
+                    fund_sector = data["sector"]
+                    # Check if fund sector matches any mapped sector
+                    if any(mapped.lower() in fund_sector.lower() or fund_sector.lower() in mapped.lower() 
+                           for mapped in mapped_sectors):
+                        sector_funds_found.append((name, data))
+                        
+            if sector_funds_found:
+                # Take the best fund(s) for this sector
+                selected_funds.extend(sector_funds_found[:2])  # Max 2 funds per sector
+                print(f"Found {len(sector_funds_found)} funds for {pref_sector} sector")
+            else:
+                print(f"No specific funds found for {pref_sector} sector")
+        
+        # Always add at least one balanced fund for diversification
+        balanced_funds = [(name, data) for name, data in sip_funds.items() 
+                         if data["category"] == "Hybrid" and data["risk"] in acceptable_risks]
+        if balanced_funds and not any(fund[1]["category"] == "Hybrid" for fund in selected_funds):
+            selected_funds.append(balanced_funds[0])
+            print("Added balanced fund for diversification")
+    else:
+        # Default selection based on risk level
+        default_funds = [(name, data) for name, data in sip_funds.items() 
+                        if data["risk"] in acceptable_risks]
+        selected_funds = default_funds[:4]
+    
+    # Remove duplicates while preserving order
+    unique_funds = []
+    seen = set()
+    for fund in selected_funds:
+        if fund[0] not in seen:
+            unique_funds.append(fund)
+            seen.add(fund[0])
     
     recommendations = []
     sip_amt = amount * (allocation_percentage / 100)
     remaining_sip_amt = sip_amt
+    
+    # Distribute amount across selected funds
+    if len(unique_funds) > 1:
+        amount_per_fund = sip_amt / len(unique_funds)
+    else:
+        amount_per_fund = sip_amt
 
-    for sip_name, amfi_code in sip_funds.items():
+    for sip_name, data in unique_funds[:6]:  # Limit to 6 funds max
         if remaining_sip_amt <= 0:
             break
             
+        amfi_code = data["code"]
         price = get_nav_from_amfi(amfi_code)
-        if price and remaining_sip_amt >= price:
-            qty = int(remaining_sip_amt // price)
+        
+        if price and price > 0:
+            # Calculate investment for this fund
+            target_amount = min(amount_per_fund, remaining_sip_amt)
+            qty = int(target_amount // price)
+            
+            if qty == 0 and remaining_sip_amt >= price:
+                qty = 1  # Buy at least 1 unit
+            
             amt = round(qty * price, 2)
-            remaining_sip_amt -= amt
+            
+            if amt > remaining_sip_amt:
+                amt = remaining_sip_amt
+                qty = int(amt // price)
+                amt = round(qty * price, 2)
+                
+            if qty > 0:
+                remaining_sip_amt -= amt
         else:
-            qty, amt = 0, 0
+            qty, amt = 0, "N/A"
 
         recommendations.append({
             "name": sip_name,
             "symbol": f"AMFI-{amfi_code}",
-            "description": "Real-time NAV from AMFI",
+            "description": f"{data['category']} Fund - {data['sector']} Focus - {data['risk'].title()} Risk",
+            "sector": data["sector"],
+            "risk": data["risk"],
+            "category": data["category"],
             "price": round(price, 2) if price else "N/A",
             "quantity": qty,
-            "amount": amt if price else "N/A"
+            "amount": amt if isinstance(amt, (int, float)) else "N/A"
         })
+        
+        if isinstance(amt, (int, float)) and amt > 0:
+            print(f"Added SIP: {sip_name} from {data['sector']} - Amount: ₹{amt}")
 
     return recommendations
 
@@ -424,6 +759,8 @@ def get_sip_recommendations(amount, allocation_percentage):
 def predict():
     """Main prediction endpoint using ML models"""
     data = request.json
+    print(f"Received data: {data}")  # Debug log
+    
     try:
         income = float(data.get('income', 0))
         amount = float(data.get('amountToInvest', 0))
@@ -432,7 +769,13 @@ def predict():
         goal = data.get('goal', 'Wealth Creation')
         experience = data.get('experience', 'Beginner')
         preferred = data.get('preferredTypes', [])
-    except (TypeError, ValueError):
+        sectors = data.get('sectors', [])  # Add sectors field
+        
+        print(f"Parsed sectors: {sectors}")  # Debug log
+        print(f"Preferred types: {preferred}")  # Debug log
+        
+    except (TypeError, ValueError) as e:
+        print(f"Error parsing data: {e}")
         return jsonify({"error": "Invalid input values"}), 400
 
     # Get ML predictions
@@ -467,14 +810,20 @@ def predict():
 
     total_actual_invested = 0
 
-    # Get recommendations based on ML allocations
+    # Get recommendations based on ML allocations with debug logs
+    print(f"Starting recommendations with sectors: {sectors}")
+    
     if "Stocks" in preferred and stock_allocation > 0:
-        stock_recs = get_stock_recommendations(amount, stock_allocation)
+        print(f"Getting stock recommendations for sectors: {sectors}")
+        stock_recs = get_stock_recommendations(amount, stock_allocation, sectors)
+        print(f"Stock recommendations: {[s['name'] for s in stock_recs]}")
         recommendations["recommendations"]["stocks"] = stock_recs
         total_actual_invested += sum(stock.get("amount", 0) for stock in stock_recs)
 
     if "SIPs" in preferred and sip_allocation > 0:
-        sip_recs = get_sip_recommendations(amount, sip_allocation)
+        print(f"Getting SIP recommendations for sectors: {sectors}")
+        sip_recs = get_sip_recommendations(amount, sip_allocation, sectors, risk)
+        print(f"SIP recommendations: {[s['name'] for s in sip_recs]}")
         recommendations["recommendations"]["sip"] = sip_recs
         total_actual_invested += sum(
             sip.get("amount", 0) for sip in sip_recs 
@@ -482,7 +831,9 @@ def predict():
         )
 
     if "ETFs" in preferred and etf_allocation > 0:
-        etf_recs = get_etf_recommendations(amount, etf_allocation)
+        print(f"Getting ETF recommendations for sectors: {sectors}")
+        etf_recs = get_etf_recommendations(amount, etf_allocation, sectors)
+        print(f"ETF recommendations: {[e['name'] for e in etf_recs]}")
         recommendations["recommendations"]["etf"] = etf_recs
         total_actual_invested += sum(etf.get("amount", 0) for etf in etf_recs)
 
