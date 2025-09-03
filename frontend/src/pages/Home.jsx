@@ -3,7 +3,7 @@ import Hero from "../components/Hero";
 import About from "../components/About";
 import HowItWorks from "../components/HowItWorks";
 import Footer from "../components/Footer";
-import Form from "./Form"; // ✅ import your form from pages
+import Form from "./Form"; 
 import { SignedIn } from "@clerk/clerk-react";
 import { useRef } from "react";
 import React, { useEffect } from "react";

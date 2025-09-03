@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
-import logo from "../assets/logodark.png";
+import logo from "../assets/logolight.png";
 import {
   SignedIn,
   SignedOut,
@@ -24,27 +24,37 @@ const Navbar = ({ onGetStartedClick }) => {
   };
 
   return (
-    <nav className="w-full fixed top-0 z-50 bg-black/80 backdrop-blur-md text-white shadow-md">
+    <nav className="w-full fixed top-0 z-50 bg-[#f6f7f1d7] backdrop-blur-md text-gray-900 shadow-md">
       <div className="max-w-7xl mx-auto flex items-center justify-between px-6 py-4">
-        <Link to="/" className="flex items-center space-x-3">
-          <img src={logo} alt="Paisafy Logo" className="h-15 w-auto" />
+        <Link
+          to="#"
+          className="flex items-center space-x-3"
+          onClick={() => window.scrollTo(top)}
+        >
+          <img src={logo} alt="Paisafy Logo" className="h-8 w-auto" />
           <span className="text-xl font-bold tracking-wide ml-3">Paisafy</span>
         </Link>
 
         <ul className="hidden md:flex items-center space-x-8 text-sm font-medium">
           <li>
-            <Link className="hover:text-blue-400" to="/">Home</Link>
+            <a className="hover:text-green-600" href="#">
+              Home
+            </a>
           </li>
           <li>
-            <a className="hover:text-blue-400" href="#About">About</a>
+            <a className="hover:text-green-600" href="#About">
+              About
+            </a>
           </li>
           <li>
-            <a className="hover:text-blue-400" href="#how-it-works">How it Works</a>
+            <a className="hover:text-green-600" href="#how-it-works">
+              How it Works
+            </a>
           </li>
           <li>
             <button
               onClick={handleGetStarted}
-              className="bg-blue-600 border rounded-md border-blue-600 px-4 py-1.5 hover:bg-blue-700 transition cursor-pointer"
+              className="bg-green-600 text-white border rounded-md border-green-600 px-4 py-1.5 hover:bg-green-700 transition cursor-pointer"
             >
               Get Started
             </button>
@@ -52,13 +62,21 @@ const Navbar = ({ onGetStartedClick }) => {
           <li>
             <SignedOut>
               <SignInButton mode="modal">
-                <button className="border border-blue-600 px-4 py-1.5 rounded-md cursor-pointer hover:border-blue-200">
+                <button
+                  className="border border-green-600 px-4 py-1.5 rounded-md cursor-pointer hover:border-green-200"
+                  id="#"
+                  onClick={() => window.scrollTo(top)}
+                >
                   Login / Sign Up
                 </button>
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              <div
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                <UserButton />
+              </div>
             </SignedIn>
           </li>
         </ul>
@@ -74,23 +92,41 @@ const Navbar = ({ onGetStartedClick }) => {
 
       {/* Mobile Dropdown */}
       {isOpen && (
-        <div className="md:hidden z-50 bg-black/10 backdrop-blur-md shadow-md px-6 pt-4 pb-6 space-y-4 text-sm font-medium">
-          <Link onClick={() => setIsOpen(false)} className="block hover:text-blue-400 ml-1" to="/">Home</Link>
-          <a onClick={() => setIsOpen(false)} className="block hover:text-blue-400 ml-1" href="#about">About</a>
-          <a onClick={() => setIsOpen(false)} className="block hover:text-blue-400 ml-1" href="#how-it-works">How it Works</a>
+        <div className="md:hidden z-50 bg-[#a0a08c54] backdrop-blur-md shadow-md px-6 pt-4 pb-6 space-y-4 text-sm font-medium">
+          <Link
+            onClick={() => setIsOpen(false)}
+            className="block hover:text-green-900 ml-1"
+            to="/"
+          >
+            Home
+          </Link>
+          <a
+            onClick={() => setIsOpen(false)}
+            className="block hover:text-green-900 ml-1"
+            href="#about"
+          >
+            About
+          </a>
+          <a
+            onClick={() => setIsOpen(false)}
+            className="block hover:text-green-900 ml-1"
+            href="#how-it-works"
+          >
+            How it Works
+          </a>
           <button
             onClick={() => {
               setIsOpen(false);
               handleGetStarted();
             }}
-            className="block bg-blue-600 px-4 py-2 rounded-md hover:bg-blue-700 transition w-full text-left"
+            className="block bg-green-600 px-4 py-2 rounded-md hover:bg-green-700 transition w-full cursor-pointer text-left"
           >
             Get Started
           </button>
 
           <SignedOut>
             <SignInButton mode="modal">
-              <button className="w-full border border-blue-600 px-4 py-2 rounded-md hover:border-blue-200 text-left">
+              <button className="w-full border border-green-600 px-4 py-2 rounded-md hover:border-green-400 text-left cursor-pointer">
                 Login / Sign Up
               </button>
             </SignInButton>

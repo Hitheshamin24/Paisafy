@@ -159,6 +159,7 @@ def load_ml_models():
         print(f"Error loading models: {e}. Retraining...")
         train_ml_models()
 
+
 def predict_investment_parameters(income, amount, risk, horizon, goal, experience, preferred_types):
     """Use ML models to predict expected returns and allocations"""
     global scaler, return_model, allocation_model, label_encoders
@@ -213,27 +214,65 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
         sip_alloc = (sip_alloc / total_alloc) * 100
         etf_alloc = (etf_alloc / total_alloc) * 100
     
-    # Adjust allocations based on preferred types
-    if 'Stocks' not in preferred_types:
-        sip_alloc += stock_alloc * 0.7
-        etf_alloc += stock_alloc * 0.3
-        stock_alloc = 0
+    # NEW LOGIC: Only allocate to preferred types
+    final_stock_alloc = 0
+    final_sip_alloc = 0
+    final_etf_alloc = 0
     
-    if 'SIPs' not in preferred_types:
-        stock_alloc += sip_alloc * 0.6
-        etf_alloc += sip_alloc * 0.4
-        sip_alloc = 0
+    # Collect allocations for preferred types only
+    preferred_allocations = []
+    if 'Stocks' in preferred_types:
+        preferred_allocations.append(('stocks', stock_alloc))
+    if 'SIPs' in preferred_types:
+        preferred_allocations.append(('sips', sip_alloc))
+    if 'ETFs' in preferred_types:
+        preferred_allocations.append(('etfs', etf_alloc))
     
-    if 'ETFs' not in preferred_types:
-        stock_alloc += etf_alloc * 0.5
-        sip_alloc += etf_alloc * 0.5
-        etf_alloc = 0
+    # If no preferred types are selected, default to balanced allocation
+    if not preferred_allocations:
+        preferred_allocations = [('stocks', stock_alloc), ('sips', sip_alloc), ('etfs', etf_alloc)]
+    
+    # Calculate total allocation for preferred types
+    total_preferred_alloc = sum(alloc for _, alloc in preferred_allocations)
+    
+    # Redistribute 100% among only the preferred types
+    if total_preferred_alloc > 0:
+        for pref_type, alloc in preferred_allocations:
+            normalized_alloc = (alloc / total_preferred_alloc) * 100
+            if pref_type == 'stocks':
+                final_stock_alloc = normalized_alloc
+            elif pref_type == 'sips':
+                final_sip_alloc = normalized_alloc
+            elif pref_type == 'etfs':
+                final_etf_alloc = normalized_alloc
+    else:
+        # Fallback: equal distribution among preferred types
+        equal_share = 100.0 / len(preferred_allocations) if preferred_allocations else 0
+        for pref_type, _ in preferred_allocations:
+            if pref_type == 'stocks':
+                final_stock_alloc = equal_share
+            elif pref_type == 'sips':
+                final_sip_alloc = equal_share
+            elif pref_type == 'etfs':
+                final_etf_alloc = equal_share
+    
+    # Ensure allocations sum to 100% (handle floating point precision issues)
+    total_final = final_stock_alloc + final_sip_alloc + final_etf_alloc
+    if total_final > 0 and abs(total_final - 100) > 0.01:
+        # Adjust the largest allocation to make total exactly 100%
+        adjustment = 100 - total_final
+        if final_stock_alloc >= final_sip_alloc and final_stock_alloc >= final_etf_alloc:
+            final_stock_alloc += adjustment
+        elif final_sip_alloc >= final_etf_alloc:
+            final_sip_alloc += adjustment
+        else:
+            final_etf_alloc += adjustment
     
     return {
         'expected_return': expected_return,
-        'stock_allocation': max(0, stock_alloc),
-        'sip_allocation': max(0, sip_alloc),
-        'etf_allocation': max(0, etf_alloc)
+        'stock_allocation': max(0, final_stock_alloc),
+        'sip_allocation': max(0, final_sip_alloc),
+        'etf_allocation': max(0, final_etf_alloc)
     }
 
 def load_amfi_nav_dict():
@@ -788,6 +827,10 @@ def predict():
     sip_allocation = ml_predictions['sip_allocation']
     etf_allocation = ml_predictions['etf_allocation']
     
+    # Debug: Print final allocations
+    print(f"Final allocations - Stocks: {stock_allocation:.2f}%, SIPs: {sip_allocation:.2f}%, ETFs: {etf_allocation:.2f}%")
+    print(f"Total allocation: {stock_allocation + sip_allocation + etf_allocation:.2f}%")
+    
     # Calculate future value
     future_value, total_invested, profit = calculate_future_value(amount, expected_return, horizon)
     
@@ -802,9 +845,9 @@ def predict():
         "profit": profit,
         "future_value": future_value,
         "allocations": {
-            "stocks": {"percent": stock_allocation},
-            "etf": {"percent": etf_allocation},
-            "sip": {"percent": sip_allocation}
+            "stocks": {"percent": round(stock_allocation, 2)},
+            "etf": {"percent": round(etf_allocation, 2)},
+            "sip": {"percent": round(sip_allocation, 2)}
         }
     }
 
@@ -813,15 +856,16 @@ def predict():
     # Get recommendations based on ML allocations with debug logs
     print(f"Starting recommendations with sectors: {sectors}")
     
+    # Only generate recommendations for preferred types with non-zero allocation
     if "Stocks" in preferred and stock_allocation > 0:
-        print(f"Getting stock recommendations for sectors: {sectors}")
+        print(f"Getting stock recommendations for sectors: {sectors}, allocation: {stock_allocation:.2f}%")
         stock_recs = get_stock_recommendations(amount, stock_allocation, sectors)
         print(f"Stock recommendations: {[s['name'] for s in stock_recs]}")
         recommendations["recommendations"]["stocks"] = stock_recs
         total_actual_invested += sum(stock.get("amount", 0) for stock in stock_recs)
 
     if "SIPs" in preferred and sip_allocation > 0:
-        print(f"Getting SIP recommendations for sectors: {sectors}")
+        print(f"Getting SIP recommendations for sectors: {sectors}, allocation: {sip_allocation:.2f}%")
         sip_recs = get_sip_recommendations(amount, sip_allocation, sectors, risk)
         print(f"SIP recommendations: {[s['name'] for s in sip_recs]}")
         recommendations["recommendations"]["sip"] = sip_recs
@@ -831,7 +875,7 @@ def predict():
         )
 
     if "ETFs" in preferred and etf_allocation > 0:
-        print(f"Getting ETF recommendations for sectors: {sectors}")
+        print(f"Getting ETF recommendations for sectors: {sectors}, allocation: {etf_allocation:.2f}%")
         etf_recs = get_etf_recommendations(amount, etf_allocation, sectors)
         print(f"ETF recommendations: {[e['name'] for e in etf_recs]}")
         recommendations["recommendations"]["etf"] = etf_recs
@@ -840,9 +884,10 @@ def predict():
     remaining_amount = round(amount - total_actual_invested, 2)
     recommendations["total_invested"] = round(total_actual_invested, 2)
     recommendations["uninvested_amount"] = remaining_amount
+    
+    print(f"Total invested: ₹{total_actual_invested}, Remaining: ₹{remaining_amount}")
 
     return jsonify(recommendations)
-
 @app.route('/retrain', methods=['POST'])
 def retrain_models():
     """Endpoint to retrain models with new data"""
