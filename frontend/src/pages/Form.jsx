@@ -33,7 +33,6 @@ function Form() {
       case "SIPs":
         return (
           result.recommendations?.sip?.reduce((sum, sip) => {
-            // Handle "N/A" and other non-numeric values
             const amount = sip.amount;
             if (amount === "N/A" || amount === null || amount === undefined) {
               return sum + 0;

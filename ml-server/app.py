@@ -213,7 +213,7 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
         sip_alloc = (sip_alloc / total_alloc) * 100
         etf_alloc = (etf_alloc / total_alloc) * 100
     
-    # IMPROVED LOGIC: Only allocate to preferred types
+    #Only allocate to preferred types
     final_stock_alloc = 0
     final_sip_alloc = 0
     final_etf_alloc = 0
@@ -251,7 +251,7 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
             elif pref_type == 'etfs':
                 final_etf_alloc = normalized_alloc
     else:
-        # Fallback: equal distribution among preferred types
+        # equal distribution among preferred types
         equal_share = 100.0 / len(preferred_allocations) if preferred_allocations else 0
         for pref_type in preferred_allocations.keys():
             if pref_type == 'stocks':
