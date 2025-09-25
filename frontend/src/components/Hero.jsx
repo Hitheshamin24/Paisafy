@@ -11,9 +11,9 @@ const Hero = ({ onGetStartedClick }) => {
   // ✅ Shared click handler
   const handleClick = () => {
     if (isSignedIn) {
-      onGetStartedClick(); // Scroll to form
+      onGetStartedClick(); 
     } else {
-      document.getElementById("hero-signin")?.click(); // Trigger sign-in modal
+      document.getElementById("hero-signin")?.click();
     }
   };
 

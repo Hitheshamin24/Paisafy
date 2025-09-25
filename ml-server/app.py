@@ -241,7 +241,6 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
     
     # Redistribute 100% among only the preferred types
     if total_preferred_alloc > 0:
-        # Normalize to 100%
         for pref_type, alloc in preferred_allocations.items():
             normalized_alloc = (alloc / total_preferred_alloc) * 100
             if pref_type == 'stocks':
@@ -264,7 +263,6 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
     # Ensure allocations sum to exactly 100% (handle floating point precision issues)
     total_final = final_stock_alloc + final_sip_alloc + final_etf_alloc
     if total_final > 0 and abs(total_final - 100) > 0.01:
-        # Adjust the largest allocation to make total exactly 100%
         adjustment = 100 - total_final
         allocations_list = [
             ('stocks', final_stock_alloc),
