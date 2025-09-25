@@ -159,7 +159,6 @@ def load_ml_models():
         print(f"Error loading models: {e}. Retraining...")
         train_ml_models()
 
-
 def predict_investment_parameters(income, amount, risk, horizon, goal, experience, preferred_types):
     """Use ML models to predict expected returns and allocations"""
     global scaler, return_model, allocation_model, label_encoders
@@ -214,30 +213,36 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
         sip_alloc = (sip_alloc / total_alloc) * 100
         etf_alloc = (etf_alloc / total_alloc) * 100
     
-    # NEW LOGIC: Only allocate to preferred types
+    # IMPROVED LOGIC: Only allocate to preferred types
     final_stock_alloc = 0
     final_sip_alloc = 0
     final_etf_alloc = 0
     
-    # Collect allocations for preferred types only
-    preferred_allocations = []
-    if 'Stocks' in preferred_types:
-        preferred_allocations.append(('stocks', stock_alloc))
-    if 'SIPs' in preferred_types:
-        preferred_allocations.append(('sips', sip_alloc))
-    if 'ETFs' in preferred_types:
-        preferred_allocations.append(('etfs', etf_alloc))
+    # If no preferred types selected, default to all types
+    if not preferred_types:
+        preferred_types = ['Stocks', 'SIPs', 'ETFs']
+        print("No preferred types selected, defaulting to all types")
     
-    # If no preferred types are selected, default to balanced allocation
-    if not preferred_allocations:
-        preferred_allocations = [('stocks', stock_alloc), ('sips', sip_alloc), ('etfs', etf_alloc)]
+    print(f"Preferred types: {preferred_types}")
+    
+    # Collect allocations for preferred types only
+    preferred_allocations = {}
+    if 'Stocks' in preferred_types:
+        preferred_allocations['stocks'] = stock_alloc
+    if 'SIPs' in preferred_types:
+        preferred_allocations['sips'] = sip_alloc
+    if 'ETFs' in preferred_types:
+        preferred_allocations['etfs'] = etf_alloc
+    
+    print(f"Original allocations for preferred types: {preferred_allocations}")
     
     # Calculate total allocation for preferred types
-    total_preferred_alloc = sum(alloc for _, alloc in preferred_allocations)
+    total_preferred_alloc = sum(preferred_allocations.values())
     
     # Redistribute 100% among only the preferred types
     if total_preferred_alloc > 0:
-        for pref_type, alloc in preferred_allocations:
+        # Normalize to 100%
+        for pref_type, alloc in preferred_allocations.items():
             normalized_alloc = (alloc / total_preferred_alloc) * 100
             if pref_type == 'stocks':
                 final_stock_alloc = normalized_alloc
@@ -248,7 +253,7 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
     else:
         # Fallback: equal distribution among preferred types
         equal_share = 100.0 / len(preferred_allocations) if preferred_allocations else 0
-        for pref_type, _ in preferred_allocations:
+        for pref_type in preferred_allocations.keys():
             if pref_type == 'stocks':
                 final_stock_alloc = equal_share
             elif pref_type == 'sips':
@@ -256,17 +261,28 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
             elif pref_type == 'etfs':
                 final_etf_alloc = equal_share
     
-    # Ensure allocations sum to 100% (handle floating point precision issues)
+    # Ensure allocations sum to exactly 100% (handle floating point precision issues)
     total_final = final_stock_alloc + final_sip_alloc + final_etf_alloc
     if total_final > 0 and abs(total_final - 100) > 0.01:
         # Adjust the largest allocation to make total exactly 100%
         adjustment = 100 - total_final
-        if final_stock_alloc >= final_sip_alloc and final_stock_alloc >= final_etf_alloc:
+        allocations_list = [
+            ('stocks', final_stock_alloc),
+            ('sips', final_sip_alloc), 
+            ('etfs', final_etf_alloc)
+        ]
+        # Find the largest allocation
+        max_alloc_type = max(allocations_list, key=lambda x: x[1])[0]
+        
+        if max_alloc_type == 'stocks':
             final_stock_alloc += adjustment
-        elif final_sip_alloc >= final_etf_alloc:
+        elif max_alloc_type == 'sips':
             final_sip_alloc += adjustment
         else:
             final_etf_alloc += adjustment
+    
+    print(f"Final allocations - Stocks: {final_stock_alloc:.2f}%, SIPs: {final_sip_alloc:.2f}%, ETFs: {final_etf_alloc:.2f}%")
+    print(f"Final total: {final_stock_alloc + final_sip_alloc + final_etf_alloc:.2f}%")
     
     return {
         'expected_return': expected_return,
@@ -274,6 +290,71 @@ def predict_investment_parameters(income, amount, risk, horizon, goal, experienc
         'sip_allocation': max(0, final_sip_alloc),
         'etf_allocation': max(0, final_etf_alloc)
     }
+
+
+def improve_investment_distribution(recommendations, target_amount, min_investment_ratio=0.90):
+    """
+    Improve investment distribution to ensure at least 90% of amount is invested
+    """
+    total_invested = recommendations.get("total_invested", 0)
+    uninvested_amount = recommendations.get("uninvested_amount", 0)
+    
+    # Calculate current investment ratio
+    current_ratio = total_invested / target_amount if target_amount > 0 else 0
+    
+    print(f"Current investment ratio: {current_ratio:.2%}")
+    print(f"Target minimum ratio: {min_investment_ratio:.2%}")
+    
+    # If we're already meeting the minimum investment ratio, return as is
+    if current_ratio >= min_investment_ratio:
+        return recommendations
+    
+    # Calculate how much more we need to invest
+    target_invested = target_amount * min_investment_ratio
+    additional_needed = target_invested - total_invested
+    
+    print(f"Additional investment needed: ₹{additional_needed:.2f}")
+    
+    # Get all recommendation categories that have recommendations
+    available_categories = []
+    if recommendations["recommendations"]["stocks"]:
+        available_categories.append("stocks")
+    if recommendations["recommendations"]["sip"]:
+        available_categories.append("sip") 
+    if recommendations["recommendations"]["etf"]:
+        available_categories.append("etf")
+    
+    if not available_categories:
+        return recommendations
+    
+    # Distribute additional amount across available categories
+    additional_per_category = additional_needed / len(available_categories)
+    
+    for category in available_categories:
+        category_recommendations = recommendations["recommendations"][category]
+        
+        if category_recommendations:
+            # Add additional amount to the first recommendation in each category
+            first_rec = category_recommendations[0]
+            if isinstance(first_rec.get("amount"), (int, float)) and first_rec.get("price"):
+                # Calculate additional quantity we can buy
+                additional_qty = int(additional_per_category // first_rec["price"])
+                if additional_qty > 0:
+                    additional_amount = additional_qty * first_rec["price"]
+                    first_rec["quantity"] += additional_qty
+                    first_rec["amount"] += additional_amount
+                    
+                    # Update totals
+                    recommendations["total_invested"] += additional_amount
+                    recommendations["uninvested_amount"] -= additional_amount
+                    
+                    print(f"Added ₹{additional_amount:.2f} to {first_rec['name']}")
+    
+    # Ensure uninvested amount doesn't go negative
+    recommendations["uninvested_amount"] = max(0, recommendations["uninvested_amount"])
+    
+    return recommendations
+
 
 def load_amfi_nav_dict():
     """Load AMFI NAV data"""
@@ -575,6 +656,37 @@ def get_etf_recommendations(amount, allocation_percentage, preferred_sectors=Non
 
     return recommendations
 
+def filter_valid_recommendations(recommendations):
+    """
+    Filter out recommendations with invalid data (amount = 0 or price = N/A)
+    """
+    valid_recommendations = []
+    
+    for rec in recommendations:
+        # Check if price is valid (not None, not "N/A", not 0)
+        price = rec.get("price")
+        amount = rec.get("amount")
+        
+        # Skip if price is invalid
+        if price is None or price == "N/A" or price == 0:
+            print(f"Skipping {rec.get('name', 'Unknown')} - Invalid price: {price}")
+            continue
+            
+        # Skip if amount is invalid (0 or "N/A")
+        if amount is None or amount == "N/A" or amount == 0:
+            print(f"Skipping {rec.get('name', 'Unknown')} - Invalid amount: {amount}")
+            continue
+            
+        # Skip if quantity is 0
+        quantity = rec.get("quantity", 0)
+        if quantity == 0:
+            print(f"Skipping {rec.get('name', 'Unknown')} - Zero quantity")
+            continue
+            
+        valid_recommendations.append(rec)
+    
+    return valid_recommendations
+
 def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=None, risk_level="medium"):
     """Get SIP recommendations with real-time NAV based on sector preferences and risk"""
     # Enhanced SIP mapping with better sector coverage
@@ -645,7 +757,7 @@ def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=Non
             "category": "Sector"
         },
         
-        # Balanced/Hybrid - Medium Risk (for diversification)
+        # Balanced/Hybrid  Medium Risk (for diversification)
         "HDFC Hybrid Equity Fund - Direct Growth": {
             "code": "119061", 
             "sector": "Balanced", 
@@ -659,7 +771,7 @@ def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=Non
             "category": "Hybrid"
         },
         
-        # Large Cap - Low to Medium Risk
+        # Large Cap  Low to Medium Risk
         "Axis Bluechip Fund - Direct Growth": {
             "code": "120503", 
             "sector": "Large Cap", 
@@ -740,7 +852,7 @@ def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=Non
             unique_funds.append(fund)
             seen.add(fund[0])
     
-    recommendations = []
+    all_recommendations = []
     sip_amt = amount * (allocation_percentage / 100)
     remaining_sip_amt = sip_amt
     
@@ -757,6 +869,7 @@ def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=Non
         amfi_code = data["code"]
         price = get_nav_from_amfi(amfi_code)
         
+        # Only create recommendation if price is valid
         if price and price > 0:
             # Calculate investment for this fund
             target_amount = min(amount_per_fund, remaining_sip_amt)
@@ -772,28 +885,26 @@ def get_sip_recommendations(amount, allocation_percentage, preferred_sectors=Non
                 qty = int(amt // price)
                 amt = round(qty * price, 2)
                 
-            if qty > 0:
+            # Only add if we have valid quantity and amount
+            if qty > 0 and amt > 0:
                 remaining_sip_amt -= amt
+                all_recommendations.append({
+                    "name": sip_name,
+                    "symbol": f"AMFI-{amfi_code}",
+                    "description": f"{data['category']} Fund - {data['sector']} Focus - {data['risk'].title()} Risk",
+                    "sector": data["sector"],
+                    "risk": data["risk"],
+                    "category": data["category"],
+                    "price": round(price, 2),
+                    "quantity": qty,
+                    "amount": amt
+                })
+                print(f"Added SIP: {sip_name} from {data['sector']} - Amount: ₹{amt}")
         else:
-            qty, amt = 0, "N/A"
+            print(f"Skipping {sip_name} - Invalid NAV: {price}")
 
-        recommendations.append({
-            "name": sip_name,
-            "symbol": f"AMFI-{amfi_code}",
-            "description": f"{data['category']} Fund - {data['sector']} Focus - {data['risk'].title()} Risk",
-            "sector": data["sector"],
-            "risk": data["risk"],
-            "category": data["category"],
-            "price": round(price, 2) if price else "N/A",
-            "quantity": qty,
-            "amount": amt if isinstance(amt, (int, float)) else "N/A"
-        })
-        
-        if isinstance(amt, (int, float)) and amt > 0:
-            print(f"Added SIP: {sip_name} from {data['sector']} - Amount: ₹{amt}")
-
-    return recommendations
-
+    # Filter valid recommendations before returning
+    return filter_valid_recommendations(all_recommendations)
 @app.route('/predict', methods=['POST'])
 def predict():
     """Main prediction endpoint using ML models"""
@@ -844,11 +955,7 @@ def predict():
         "expected_return": expected_return,
         "profit": profit,
         "future_value": future_value,
-        "allocations": {
-            "stocks": {"percent": round(stock_allocation, 2)},
-            "etf": {"percent": round(etf_allocation, 2)},
-            "sip": {"percent": round(sip_allocation, 2)}
-        }
+        "allocations": {}  # Start with empty allocations
     }
 
     total_actual_invested = 0
@@ -860,34 +967,103 @@ def predict():
     if "Stocks" in preferred and stock_allocation > 0:
         print(f"Getting stock recommendations for sectors: {sectors}, allocation: {stock_allocation:.2f}%")
         stock_recs = get_stock_recommendations(amount, stock_allocation, sectors)
-        print(f"Stock recommendations: {[s['name'] for s in stock_recs]}")
+        # Filter out invalid stock recommendations
+        stock_recs = filter_valid_recommendations(stock_recs)
+        print(f"Valid stock recommendations: {[s['name'] for s in stock_recs]}")
         recommendations["recommendations"]["stocks"] = stock_recs
-        total_actual_invested += sum(stock.get("amount", 0) for stock in stock_recs)
+        
+        # Calculate actual stocks investment
+        stocks_invested = sum(stock.get("amount", 0) for stock in stock_recs)
+        total_actual_invested += stocks_invested
+        
+        # Only add allocation if there are actual recommendations with investment
+        if stock_recs and stocks_invested > 0:
+            recommendations["allocations"]["stocks"] = {
+                "percent": round((stocks_invested / amount) * 100, 2),
+                "amount": round(stocks_invested, 2)
+            }
 
     if "SIPs" in preferred and sip_allocation > 0:
         print(f"Getting SIP recommendations for sectors: {sectors}, allocation: {sip_allocation:.2f}%")
         sip_recs = get_sip_recommendations(amount, sip_allocation, sectors, risk)
-        print(f"SIP recommendations: {[s['name'] for s in sip_recs]}")
+        print(f"Valid SIP recommendations: {[s['name'] for s in sip_recs]}")
         recommendations["recommendations"]["sip"] = sip_recs
-        total_actual_invested += sum(
+        
+        # Calculate actual SIP investment
+        sips_invested = sum(
             sip.get("amount", 0) for sip in sip_recs 
             if isinstance(sip.get("amount"), (int, float))
         )
+        total_actual_invested += sips_invested
+        
+        # Only add allocation if there are actual recommendations with investment
+        if sip_recs and sips_invested > 0:
+            recommendations["allocations"]["sip"] = {
+                "percent": round((sips_invested / amount) * 100, 2),
+                "amount": round(sips_invested, 2)
+            }
 
     if "ETFs" in preferred and etf_allocation > 0:
         print(f"Getting ETF recommendations for sectors: {sectors}, allocation: {etf_allocation:.2f}%")
         etf_recs = get_etf_recommendations(amount, etf_allocation, sectors)
-        print(f"ETF recommendations: {[e['name'] for e in etf_recs]}")
+        # Filter out invalid ETF recommendations
+        etf_recs = filter_valid_recommendations(etf_recs)
+        print(f"Valid ETF recommendations: {[e['name'] for e in etf_recs]}")
         recommendations["recommendations"]["etf"] = etf_recs
-        total_actual_invested += sum(etf.get("amount", 0) for etf in etf_recs)
+        
+        # Calculate actual ETF investment
+        etfs_invested = sum(etf.get("amount", 0) for etf in etf_recs)
+        total_actual_invested += etfs_invested
+        
+        # Only add allocation if there are actual recommendations with investment
+        if etf_recs and etfs_invested > 0:
+            recommendations["allocations"]["etf"] = {
+                "percent": round((etfs_invested / amount) * 100, 2),
+                "amount": round(etfs_invested, 2)
+            }
 
     remaining_amount = round(amount - total_actual_invested, 2)
     recommendations["total_invested"] = round(total_actual_invested, 2)
     recommendations["uninvested_amount"] = remaining_amount
     
-    print(f"Total invested: ₹{total_actual_invested}, Remaining: ₹{remaining_amount}")
+    print(f"Initial - Total invested: ₹{total_actual_invested}, Remaining: ₹{remaining_amount}")
+    
+    # Improve investment distribution to ensure at least 90% is invested
+    recommendations = improve_investment_distribution(recommendations, amount, min_investment_ratio=0.90)
+    
+    # Recalculate allocations after improvement
+    final_total_invested = recommendations["total_invested"]
+    
+    # Update allocation percentages based on actual final investments
+    if "stocks" in recommendations["allocations"]:
+        stock_amount = sum(stock.get("amount", 0) for stock in recommendations["recommendations"]["stocks"])
+        recommendations["allocations"]["stocks"] = {
+            "percent": round((stock_amount / amount) * 100, 2),
+            "amount": round(stock_amount, 2)
+        }
+    
+    if "sip" in recommendations["allocations"]:
+        sip_amount = sum(
+            sip.get("amount", 0) for sip in recommendations["recommendations"]["sip"] 
+            if isinstance(sip.get("amount"), (int, float))
+        )
+        recommendations["allocations"]["sip"] = {
+            "percent": round((sip_amount / amount) * 100, 2),
+            "amount": round(sip_amount, 2)
+        }
+    
+    if "etf" in recommendations["allocations"]:
+        etf_amount = sum(etf.get("amount", 0) for etf in recommendations["recommendations"]["etf"])
+        recommendations["allocations"]["etf"] = {
+            "percent": round((etf_amount / amount) * 100, 2),
+            "amount": round(etf_amount, 2)
+        }
+    
+    print(f"Final - Total invested: ₹{recommendations['total_invested']}, Remaining: ₹{recommendations['uninvested_amount']}")
+    print(f"Final allocations: {recommendations['allocations']}")
 
     return jsonify(recommendations)
+
 @app.route('/retrain', methods=['POST'])
 def retrain_models():
     """Endpoint to retrain models with new data"""

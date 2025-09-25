@@ -46,11 +46,19 @@ function Form() {
         return 0;
     }
   };
-  const [suggestion, setSuggestion] = useState("");
+  const [investmentSuggestion, setInvestmentSuggestion] = useState({
+    text: "",
+    type: "",
+  });
+  const [incomeSuggestion, setIncomeSuggestion] = useState({
+    text: "",
+    type: "",
+  });
+  const [timeFrameSuggestion,setTimeFrameSuggestion]=useState("");
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("Stocks");
   const [loading, setLoading] = useState(false);
-  const { getToken } = useAuth(); // Clerk hook
+  const { getToken } = useAuth(); 
   const { user } = useUser();
   const [recommendationExists, setRecommendationExists] = useState(false);
   useEffect(() => {
@@ -100,14 +108,61 @@ function Form() {
     const updateForm = { ...formData, [name]: value };
 
     if (name === "income") {
-      const incomeVal = parseFloat(value);
-      if (!isNaN(incomeVal)) {
-        const suggest = Math.floor(incomeVal * 0.2);
-        setSuggestion(
-          `Suggestion: you can consider investing ₹${suggest} for better returns.`
-        );
+      if (value.trim() === "") {
+        // if input is cleared
+        setIncomeSuggestion({ text: "", type: "" });
       } else {
-        setSuggestion("");
+        const incomeVal = parseFloat(value);
+
+        if (!isNaN(incomeVal) && incomeVal >= 100) {
+          const suggest = Math.floor(incomeVal * 0.2);
+          setIncomeSuggestion({
+            text: `Suggestion: you can consider investing ₹${suggest} for better returns.`,
+            type: "success",
+          });
+        } else if (incomeVal < 0) {
+          setIncomeSuggestion({
+            text: "Income should not go negatives",
+            type: "error",
+          });
+        } else {
+          // optional: show a gentle error if between 0–99
+          setIncomeSuggestion({
+            text: "Income should be at least 100",
+            type: "error",
+          });
+        }
+      }
+    }
+
+    if (name === "amountToInvest") {
+      if (value.trim() === "") {
+        setInvestmentSuggestion({ text: "", type: "" });
+      } else {
+        const investVal = parseFloat(value);
+        if (investVal <= 20) {
+          setInvestmentSuggestion({
+            text: "Please enter the Valid amount",
+            type: "error",
+
+          });
+        }
+        else{
+          setInvestmentSuggestion({text:"",type:"success"})
+        }
+      }
+    }
+
+    if(name==='horizon'){
+      if(value.trim===""){
+        setTimeFrameSuggestion("");
+      }else{
+        const horizon=parseFloat(value);
+        if(horizon<=0){
+          setTimeFrameSuggestion("Please Enter the valid Time Frame");
+        }else{
+          setTimeFrameSuggestion("");
+        }
       }
     }
     setFormData(updateForm);
@@ -208,7 +263,9 @@ function Form() {
               onSubmit={handleSubmit}
             >
               <div className="md:col-span-2">
-                <label className="block text-gray-800 font-semibold text-lg mb-2">Monthly Income (₹)</label>
+                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                  Monthly Income (₹)
+                </label>
                 <input
                   type="number"
                   name="income"
@@ -218,9 +275,15 @@ function Form() {
                   className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
                   required
                 />
-                {suggestion && (
-                  <p className="text-sm font-semibold text-green-700 mt-3 bg-green-50 px-4 py-2 rounded-xl border border-green-200">
-                    {suggestion}
+                {incomeSuggestion.text && (
+                  <p
+                    className={`text-sm font-semibold  mt-3 bg-green-50 px-4 py-2 rounded-xl border  ${
+                      incomeSuggestion.type == "error"
+                        ? "text-red-700 border-red-200"
+                        : "text-green-700 border-green-200"
+                    }`}
+                  >
+                    {incomeSuggestion.text}
                   </p>
                 )}
               </div>
@@ -238,10 +301,20 @@ function Form() {
                   className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
                   required
                 />
+                {investmentSuggestion.text && (
+                  <p
+                    className={`text-sm font-semibold  mt-3 px-4 py-2 rounded-xl bg-green-50  text-red-700 border border-red-200 `}
+                  >
+                    {investmentSuggestion.text}
+                  </p>
+                )}
+                
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">Risk Appetite</label>
+                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                  Risk Appetite
+                </label>
                 <select
                   name="risk"
                   value={formData.risk}
@@ -261,7 +334,9 @@ function Form() {
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">Investment Goal</label>
+                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                  Investment Goal
+                </label>
                 <select
                   name="goal"
                   value={formData.goal}
@@ -286,7 +361,9 @@ function Form() {
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">Experience Level</label>
+                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                  Experience Level
+                </label>
                 <select
                   name="experience"
                   value={formData.experience}
@@ -319,6 +396,13 @@ function Form() {
                   required
                   min="1"
                 />
+                    {timeFrameSuggestion && (
+                  <p
+                    className={`text-sm font-semibold  mt-3 px-4 py-2 rounded-xl bg-green-50  text-red-700 border border-red-200 `}
+                  >
+                    {timeFrameSuggestion}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -389,7 +473,7 @@ function Form() {
                 </button>
               </div>
             </form>
-            
+
             {loading && (
               <div className="mt-12 flex justify-center items-center gap-3 text-green-700 font-bold text-xl bg-gradient-to-r from-green-50 to-lime-50 py-6 rounded-2xl border border-green-200">
                 <span>Generating recommendations</span>
@@ -418,17 +502,20 @@ function Form() {
                             {
                               label: "Stocks",
                               value: result.allocations?.stocks?.percent || 0,
-                              color: "bg-gradient-to-r from-lime-500 to-green-600",
+                              color:
+                                "bg-gradient-to-r from-lime-500 to-green-600",
                             },
                             {
                               label: "ETFs",
                               value: result.allocations?.etf?.percent || 0,
-                              color: "bg-gradient-to-r from-green-500 to-lime-500",
+                              color:
+                                "bg-gradient-to-r from-green-500 to-lime-500",
                             },
                             {
                               label: "SIPs",
                               value: result.allocations?.sip?.percent || 0,
-                              color: "bg-gradient-to-r from-green-600 to-lime-600",
+                              color:
+                                "bg-gradient-to-r from-green-600 to-lime-600",
                             },
                           ].map((item) => {
                             const invested = getActualInvested(item.label);
@@ -452,7 +539,8 @@ function Form() {
                                 </div>
 
                                 <div className="text-gray-700 mt-3 text-center font-bold text-lg bg-white px-4 py-2 rounded-xl border border-gray-200">
-                                  ₹{invested.toLocaleString("en-IN")} ({item.value.toFixed(1)}%)
+                                  ₹{invested.toLocaleString("en-IN")} (
+                                  {item.value.toFixed(1)}%)
                                 </div>
                               </div>
                             );
@@ -573,7 +661,9 @@ function Form() {
                 {/*  Investment Summary   */}
                 <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
                   <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-2xl p-6 text-center shadow-xl transform hover:scale-105 transition-all duration-300">
-                    <p className="text-base text-green-100 font-semibold">💸 Total Invested</p>
+                    <p className="text-base text-green-100 font-semibold">
+                      💸 Total Invested
+                    </p>
                     <p className="text-2xl font-bold text-white mt-2">
                       ₹ {result.total_invested?.toLocaleString("en-IN")}
                     </p>
@@ -591,8 +681,10 @@ function Form() {
 
                 {/* === Final Return Summary === */}
                 <div className="mt-12 bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 p-8 rounded-3xl shadow-xl max-w-2xl mx-auto">
-                  <h4 className="text-2xl font-bold text-center text-gray-900 mb-6">Investment Summary</h4>
-                  
+                  <h4 className="text-2xl font-bold text-center text-gray-900 mb-6">
+                    Investment Summary
+                  </h4>
+
                   <div className="space-y-4 text-lg font-semibold">
                     {/* 💰 Total Invested */}
                     <div className="flex justify-between items-center py-3 px-4 bg-white rounded-xl shadow-sm">
