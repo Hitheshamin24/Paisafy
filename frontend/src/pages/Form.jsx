@@ -3,6 +3,8 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import { useAuth, useUser } from "@clerk/clerk-react";
+import { TrendingUp, DollarSign, PieChart, Wallet, ArrowRight, Save, Edit3 } from "lucide-react"; // Added icons for better look
+
 function Form() {
   const [formData, setFormData] = useState({
     income: "",
@@ -12,7 +14,9 @@ function Form() {
     goal: "Wealth Creation",
     preferredTypes: [],
     sectors: [],
+    experience: "Beginner",
   });
+
   const getActualInvested = (label) => {
     if (!result) return 0;
     switch (label) {
@@ -45,6 +49,7 @@ function Form() {
         return 0;
     }
   };
+
   const [investmentSuggestion, setInvestmentSuggestion] = useState({
     text: "",
     type: "",
@@ -53,13 +58,14 @@ function Form() {
     text: "",
     type: "",
   });
-  const [timeFrameSuggestion,setTimeFrameSuggestion]=useState("");
+  const [timeFrameSuggestion, setTimeFrameSuggestion] = useState("");
   const [result, setResult] = useState(null);
   const [activeTab, setActiveTab] = useState("Stocks");
   const [loading, setLoading] = useState(false);
-  const { getToken } = useAuth(); 
+  const { getToken } = useAuth();
   const { user } = useUser();
   const [recommendationExists, setRecommendationExists] = useState(false);
+
   useEffect(() => {
     const checkRecommendation = async () => {
       if (!user) return;
@@ -80,10 +86,10 @@ function Form() {
 
   const handleSaveRecommendation = async () => {
     try {
-      const token = await getToken(); // Clerk session token
+      const token = await getToken();
       await axios.post(
         "http://localhost:5000/api/save-recommendation",
-        { formData, result }, // no userId needed
+        { formData, result },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -108,11 +114,9 @@ function Form() {
 
     if (name === "income") {
       if (value.trim() === "") {
-        // if input is cleared
         setIncomeSuggestion({ text: "", type: "" });
       } else {
         const incomeVal = parseFloat(value);
-
         if (!isNaN(incomeVal) && incomeVal >= 100) {
           const suggest = Math.floor(incomeVal * 0.2);
           setIncomeSuggestion({
@@ -125,7 +129,6 @@ function Form() {
             type: "error",
           });
         } else {
-          // optional: show a gentle error if between 0–99
           setIncomeSuggestion({
             text: "Income should be at least 100",
             type: "error",
@@ -143,23 +146,21 @@ function Form() {
           setInvestmentSuggestion({
             text: "Please enter the Valid amount",
             type: "error",
-
           });
-        }
-        else{
-          setInvestmentSuggestion({text:"",type:"success"})
+        } else {
+          setInvestmentSuggestion({ text: "", type: "success" });
         }
       }
     }
 
-    if(name==='horizon'){
-      if(value.trim===""){
+    if (name === "horizon") {
+      if (value.trim === "") {
         setTimeFrameSuggestion("");
-      }else{
-        const horizon=parseFloat(value);
-        if(horizon<=0){
+      } else {
+        const horizon = parseFloat(value);
+        if (horizon <= 0) {
           setTimeFrameSuggestion("Please Enter the valid Time Frame");
-        }else{
+        } else {
           setTimeFrameSuggestion("");
         }
       }
@@ -167,21 +168,13 @@ function Form() {
     setFormData(updateForm);
   };
 
-  // New handleChange for checkboxes
   const handleCheckboxChange = (e) => {
     const { name, value, checked } = e.target;
     setFormData((prevFormData) => {
-      // Create a copy of the array for the specific field (preferredTypes or sectors)
       const currentValues = prevFormData[name];
-
       if (checked) {
-        // If checked, add the value if it's not already there
-        return {
-          ...prevFormData,
-          [name]: [...currentValues, value],
-        };
+        return { ...prevFormData, [name]: [...currentValues, value] };
       } else {
-        // If unchecked, remove the value
         return {
           ...prevFormData,
           [name]: currentValues.filter((item) => item !== value),
@@ -192,7 +185,7 @@ function Form() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user) return; // Make sure user is loaded
+    if (!user) return;
     setLoading(true);
     setResult(null);
 
@@ -206,7 +199,6 @@ function Form() {
 
       setResult(res.data);
 
-      // Check if this user already has a saved recommendation
       const token = await getToken();
       const checkRes = await axios.get(
         `http://localhost:5000/api/check-recommendation/${user.id}`,
@@ -230,102 +222,98 @@ function Form() {
   return (
     <>
       <SignedIn>
-        <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 flex items-center justify-center px-4 pt-20 pb-16 relative overflow-hidden">
+        <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 flex items-center justify-center px-4 pt-24 pb-12 relative overflow-hidden">
           {/* Background decorative elements */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-20 left-20 w-40 h-40 bg-lime-400 rounded-full blur-3xl"></div>
-            <div className="absolute bottom-32 right-16 w-56 h-56 bg-green-400 rounded-full blur-3xl"></div>
-            <div className="absolute top-1/3 right-1/3 w-32 h-32 bg-lime-500 rounded-full blur-2xl"></div>
+          <div className="absolute inset-0 opacity-5 pointer-events-none">
+            <div className="absolute top-20 left-20 w-32 h-32 bg-lime-400 rounded-full blur-3xl"></div>
+            <div className="absolute bottom-32 right-16 w-40 h-40 bg-green-400 rounded-full blur-3xl"></div>
           </div>
 
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="relative z-10 bg-white/95 backdrop-blur-lg border border-white/50 p-8 md:p-12 rounded-3xl shadow-2xl w-full max-w-4xl text-gray-800"
+            className="relative z-10 bg-white/95 backdrop-blur-lg border border-white/50 p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-4xl text-gray-800"
           >
-            <div className="text-center mb-10">
-              <h2 className="text-4xl md:text-5xl font-extrabold mb-4 bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 bg-clip-text text-transparent">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-extrabold mb-1 bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 bg-clip-text text-transparent">
                 Get Your{" "}
                 <span className="bg-gradient-to-r from-lime-500 to-green-600 bg-clip-text text-transparent">
                   Personalized
                 </span>{" "}
                 Recommendations
               </h2>
-              <p className="text-lg text-gray-600 font-medium">
+              <p className="text-sm md:text-base text-gray-600 font-medium">
                 Fill the form below to get tailored investment insights.
               </p>
             </div>
 
             <form
-              className="grid grid-cols-1 md:grid-cols-2 gap-6"
+              className="grid grid-cols-1 md:grid-cols-2 gap-4"
               onSubmit={handleSubmit}
             >
               <div className="md:col-span-2">
-                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                <label className="block text-gray-800 font-semibold text-sm mb-1 ml-1">
                   Monthly Income (₹)
                 </label>
-                <input
-                  type="number"
-                  name="income"
-                  value={formData.income}
-                  onChange={handleChange}
-                  placeholder="e.g., 25000"
-                  className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
-                  required
-                />
-                {incomeSuggestion.text && (
-                  <p
-                    className={`text-sm font-semibold  mt-3 bg-green-50 px-4 py-2 rounded-xl border  ${
-                      incomeSuggestion.type == "error"
-                        ? "text-red-700 border-red-200"
-                        : "text-green-700 border-green-200"
-                    }`}
-                  >
-                    {incomeSuggestion.text}
-                  </p>
-                )}
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="income"
+                    value={formData.income}
+                    onChange={handleChange}
+                    placeholder="e.g., 25000"
+                    className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-4 py-2.5 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-200 transition-all duration-300 text-sm font-medium shadow-inner"
+                    required
+                  />
+                  {incomeSuggestion.text && (
+                    <p
+                      className={`text-[10px] sm:text-xs font-semibold mt-1 ml-1 ${
+                        incomeSuggestion.type === "error"
+                          ? "text-red-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {incomeSuggestion.text}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                <label className="block text-gray-800 font-semibold text-sm mb-1 ml-1">
                   Amount to Invest (₹)
                 </label>
-                <input
-                  type="number"
-                  name="amountToInvest"
-                  value={formData.amountToInvest}
-                  onChange={handleChange}
-                  placeholder="e.g., 5000"
-                  className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
-                  required
-                />
-                {investmentSuggestion.text && (
-                  <p
-                    className={`text-sm font-semibold  mt-3 px-4 py-2 rounded-xl bg-green-50  text-red-700 border border-red-200 `}
-                  >
-                    {investmentSuggestion.text}
-                  </p>
-                )}
-                
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="amountToInvest"
+                    value={formData.amountToInvest}
+                    onChange={handleChange}
+                    placeholder="e.g., 5000"
+                    className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-4 py-2.5 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-200 transition-all duration-300 text-sm font-medium shadow-inner"
+                    required
+                  />
+                  {investmentSuggestion.text && (
+                    <p className="text-[10px] sm:text-xs font-semibold mt-1 ml-1 text-red-600">
+                      {investmentSuggestion.text}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                <label className="block text-gray-800 font-semibold text-sm mb-1 ml-1">
                   Risk Appetite
                 </label>
                 <select
                   name="risk"
                   value={formData.risk}
                   onChange={handleChange}
-                  className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
+                  className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-4 py-2.5 text-gray-800 focus:outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-200 transition-all duration-300 text-sm font-medium shadow-inner"
                 >
                   {["low", "medium", "high"].map((risk) => (
-                    <option
-                      key={risk}
-                      value={risk}
-                      className="bg-white text-gray-800 py-2"
-                    >
+                    <option key={risk} value={risk}>
                       {risk[0].toUpperCase() + risk.slice(1)}
                     </option>
                   ))}
@@ -333,14 +321,14 @@ function Form() {
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                <label className="block text-gray-800 font-semibold text-sm mb-1 ml-1">
                   Investment Goal
                 </label>
                 <select
                   name="goal"
                   value={formData.goal}
                   onChange={handleChange}
-                  className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
+                  className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-4 py-2.5 text-gray-800 focus:outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-200 transition-all duration-300 text-sm font-medium shadow-inner"
                 >
                   {[
                     "Wealth Creation",
@@ -348,11 +336,7 @@ function Form() {
                     "Child Education",
                     "Short-Term Gains",
                   ].map((goal) => (
-                    <option
-                      key={goal}
-                      value={goal}
-                      className="bg-white text-gray-800 py-2"
-                    >
+                    <option key={goal} value={goal}>
                       {goal}
                     </option>
                   ))}
@@ -360,21 +344,17 @@ function Form() {
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">
+                <label className="block text-gray-800 font-semibold text-sm mb-1 ml-1">
                   Experience Level
                 </label>
                 <select
                   name="experience"
                   value={formData.experience}
                   onChange={handleChange}
-                  className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
+                  className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-4 py-2.5 text-gray-800 focus:outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-200 transition-all duration-300 text-sm font-medium shadow-inner"
                 >
                   {["Beginner", "Intermediate", "Expert"].map((level) => (
-                    <option
-                      key={level}
-                      value={level}
-                      className="bg-white text-gray-800 py-2"
-                    >
+                    <option key={level} value={level}>
                       {level}
                     </option>
                   ))}
@@ -382,89 +362,93 @@ function Form() {
               </div>
 
               <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-2">
-                  Time Frame (in years)
+                <label className="block text-gray-800 font-semibold text-sm mb-1 ml-1">
+                  Time Frame (years)
                 </label>
-                <input
-                  type="number"
-                  name="horizon"
-                  value={formData.horizon}
-                  onChange={handleChange}
-                  placeholder="e.g., 5"
-                  className="w-full rounded-2xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-6 py-4 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-4 focus:ring-lime-200 transition-all duration-300 text-lg font-medium shadow-inner"
-                  required
-                  min="1"
-                />
-                    {timeFrameSuggestion && (
-                  <p
-                    className={`text-sm font-semibold  mt-3 px-4 py-2 rounded-xl bg-green-50  text-red-700 border border-red-200 `}
-                  >
-                    {timeFrameSuggestion}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-3">
-                  Preferred Investment Types
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {["Stocks", "SIPs", "ETFs"].map((type) => (
-                    <label
-                      key={type}
-                      className="text-gray-700 cursor-pointer hover:text-green-600  flex items-center gap-3 bg-white px-4 py-3 rounded-xl border border-gray-200 hover:border-lime-300 hover:shadow-md transition-all duration-200"
-                    >
-                      <input
-                        type="checkbox"
-                        name="preferredTypes"
-                        value={type}
-                        checked={formData.preferredTypes.includes(type)}
-                        onChange={handleCheckboxChange}
-                        className="h-5 w-5 text-lime-600 focus:ring-lime-500 border-2 border-gray-300 rounded-md"
-                      />
-                      <span className="font-medium">{type}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-gray-800 font-semibold text-lg mb-3">
-                  Preferred Sectors
-                </label>
-                <div className="flex flex-wrap gap-3">
-                  {[
-                    "IT",
-                    "Banking",
-                    "FMCG",
-                    "Pharma",
-                    "Energy",
-                    "Automobile",
-                    "Healthcare",
-                  ].map((sector) => (
-                    <label
-                      key={sector}
-                      className="text-gray-700 cursor-pointer hover:text-green-600 flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-gray-200 hover:border-lime-300 hover:shadow-md transition-all duration-200"
-                    >
-                      <input
-                        type="checkbox"
-                        name="sectors"
-                        value={sector}
-                        checked={formData.sectors.includes(sector)}
-                        onChange={handleCheckboxChange}
-                        className="h-4 w-4 text-lime-600 focus:ring-lime-500 border-2 border-gray-300 rounded"
-                      />
-                      <span className="text-sm font-medium">{sector}</span>
-                    </label>
-                  ))}
+                <div className="relative">
+                  <input
+                    type="number"
+                    name="horizon"
+                    value={formData.horizon}
+                    onChange={handleChange}
+                    placeholder="e.g., 5"
+                    className="w-full rounded-xl bg-gradient-to-r from-gray-50 to-slate-50 border-2 border-gray-200 px-4 py-2.5 text-gray-800 placeholder-gray-500 focus:outline-none focus:border-lime-400 focus:ring-2 focus:ring-lime-200 transition-all duration-300 text-sm font-medium shadow-inner"
+                    required
+                    min="1"
+                  />
+                  {timeFrameSuggestion && (
+                    <p className="text-[10px] sm:text-xs font-semibold mt-1 ml-1 text-red-600">
+                      {timeFrameSuggestion}
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="md:col-span-2">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1">
+                    <label className="block text-gray-800 font-semibold text-sm mb-2 ml-1">
+                      Preferred Types
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {["Stocks", "SIPs", "ETFs"].map((type) => (
+                        <label
+                          key={type}
+                          className="text-gray-700 cursor-pointer hover:text-green-600 flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 hover:border-lime-300 hover:shadow-sm transition-all duration-200"
+                        >
+                          <input
+                            type="checkbox"
+                            name="preferredTypes"
+                            value={type}
+                            checked={formData.preferredTypes.includes(type)}
+                            onChange={handleCheckboxChange}
+                            className="h-3.5 w-3.5 text-lime-600 focus:ring-lime-500 border-2 border-gray-300 rounded"
+                          />
+                          <span className="text-xs font-medium">{type}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block text-gray-800 font-semibold text-sm mb-2 ml-1">
+                      Preferred Sectors
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        "IT",
+                        "Banking",
+                        "FMCG",
+                        "Pharma",
+                        "Energy",
+                        "Auto",
+                        "Health",
+                      ].map((sector) => (
+                        <label
+                          key={sector}
+                          className="text-gray-700 cursor-pointer hover:text-green-600 flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 hover:border-lime-300 hover:shadow-sm transition-all duration-200"
+                        >
+                          <input
+                            type="checkbox"
+                            name="sectors"
+                            value={sector}
+                            checked={formData.sectors.includes(sector)}
+                            onChange={handleCheckboxChange}
+                            className="h-3.5 w-3.5 text-lime-600 focus:ring-lime-500 border-2 border-gray-300 rounded"
+                          />
+                          <span className="text-xs font-medium">{sector}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="md:col-span-2 mt-2">
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 text-white font-bold py-4 rounded-2xl shadow-xl text-lg ${
+                  className={`w-full bg-gradient-to-r from-lime-500 to-green-600 hover:from-lime-600 hover:to-green-700 hover:shadow-lg transform hover:scale-[1.01] transition-all duration-300 text-white font-bold py-3 rounded-xl shadow-md text-base ${
                     loading ? "opacity-50 cursor-not-allowed" : ""
                   }`}
                 >
@@ -474,92 +458,85 @@ function Form() {
             </form>
 
             {loading && (
-              <div className="mt-12 flex justify-center items-center gap-3 text-green-700 font-bold text-xl bg-gradient-to-r from-green-50 to-lime-50 py-6 rounded-2xl border border-green-200">
+              <div className="mt-8 flex justify-center items-center gap-2 text-green-700 font-bold text-sm bg-gradient-to-r from-green-50 to-lime-50 py-3 rounded-xl border border-green-200">
                 <span>Generating recommendations</span>
                 <span className="flex space-x-1">
-                  <span className="w-3 h-3 bg-lime-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
-                  <span className="w-3 h-3 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
-                  <span className="w-3 h-3 bg-lime-600 rounded-full animate-bounce"></span>
+                  <span className="w-2 h-2 bg-lime-500 rounded-full animate-bounce [animation-delay:-0.3s]"></span>
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce [animation-delay:-0.15s]"></span>
+                  <span className="w-2 h-2 bg-lime-600 rounded-full animate-bounce"></span>
                 </span>
               </div>
             )}
 
             {result && (
-              <div className="mt-16">
+              <div className="mt-8">
                 {/* === Portfolio Allocation Section === */}
-                <div className="bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 p-8 rounded-3xl shadow-xl animate-fade-in-up">
-                  <h3 className="text-gray-900 text-2xl font-bold mb-6 text-center">
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 p-5 rounded-2xl shadow-xl animate-fade-in-up">
+                  <h3 className="text-gray-900 text-lg font-bold mb-4 text-center">
                     Portfolio Allocation
                   </h3>
 
                   {(() => {
-                    const totalAmount = Number(formData.amountToInvest || 0);
                     return (
-                      <>
-                        <div className="space-y-8">
-                          {[
-                            {
-                              label: "Stocks",
-                              value: result.allocations?.stocks?.percent || 0,
-                              color:
-                                "bg-gradient-to-r from-lime-500 to-green-600",
-                            },
-                            {
-                              label: "ETFs",
-                              value: result.allocations?.etf?.percent || 0,
-                              color:
-                                "bg-gradient-to-r from-green-500 to-lime-500",
-                            },
-                            {
-                              label: "SIPs",
-                              value: result.allocations?.sip?.percent || 0,
-                              color:
-                                "bg-gradient-to-r from-green-600 to-lime-600",
-                            },
-                          ].map((item) => {
-                            const invested = getActualInvested(item.label);
+                      <div className="space-y-4">
+                        {[
+                          {
+                            label: "Stocks",
+                            value: result.allocations?.stocks?.percent || 0,
+                            color: "bg-gradient-to-r from-lime-500 to-green-600",
+                          },
+                          {
+                            label: "ETFs",
+                            value: result.allocations?.etf?.percent || 0,
+                            color: "bg-gradient-to-r from-green-500 to-lime-500",
+                          },
+                          {
+                            label: "SIPs",
+                            value: result.allocations?.sip?.percent || 0,
+                            color: "bg-gradient-to-r from-green-600 to-lime-600",
+                          },
+                        ].map((item) => {
+                          const invested = getActualInvested(item.label);
 
-                            return (
-                              <div key={item.label} className="text-base">
-                                <div className="flex justify-between mb-2">
-                                  <span className="text-gray-900 font-bold text-lg">
-                                    {item.label}
-                                  </span>
-                                  <span className="text-gray-700 font-semibold">
-                                    {item.value.toFixed(1)}%
-                                  </span>
-                                </div>
-
-                                <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
-                                  <div
-                                    className={`${item.color} h-4 transition-all duration-500 shadow-sm`}
-                                    style={{ width: `${item.value}%` }}
-                                  ></div>
-                                </div>
-
-                                <div className="text-gray-700 mt-3 text-center font-bold text-lg bg-white px-4 py-2 rounded-xl border border-gray-200">
-                                  ₹{invested.toLocaleString("en-IN")} (
-                                  {item.value.toFixed(1)}%)
-                                </div>
+                          return (
+                            <div key={item.label} className="text-sm">
+                              <div className="flex justify-between mb-1">
+                                <span className="text-gray-900 font-bold text-sm">
+                                  {item.label}
+                                </span>
+                                <span className="text-gray-700 font-semibold">
+                                  {item.value.toFixed(1)}%
+                                </span>
                               </div>
-                            );
-                          })}
-                        </div>
-                      </>
+
+                              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+                                <div
+                                  className={`${item.color} h-3 transition-all duration-500 shadow-sm`}
+                                  style={{ width: `${item.value}%` }}
+                                ></div>
+                              </div>
+
+                              <div className="text-gray-700 mt-2 text-center font-bold text-xs bg-white px-2 py-1 rounded-lg border border-gray-200 inline-block w-full">
+                                ₹{invested.toLocaleString("en-IN")} ({item.value.toFixed(1)}%)
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     );
                   })()}
                 </div>
 
                 {/* === Tabs === */}
-                <div className="flex justify-center gap-4 mt-10">
+                <div className="flex justify-center gap-3 mt-6">
                   {["Stocks", "ETFs", "SIPs"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
-                      className={`px-6 py-3 rounded-2xl transition-all duration-300 font-semibold text-lg ${
+                      className={`px-4 py-2 rounded-xl transition-all duration-300 font-semibold text-sm ${
                         activeTab === tab
-                          ? "bg-gradient-to-r from-lime-500 to-green-600 text-white shadow-xl transform scale-105"
-                          : "bg-white text-gray-700 border-2 border-gray-200 hover:border-lime-300 hover:shadow-lg"
+                          ? "bg-gradient-to-r from-lime-500 to-green-600 text-white shadow-md transform scale-105"
+                          : "bg-white text-gray-700 border-2 border-gray-200 hover:border-lime-300 hover:shadow-sm"
                       }`}
                     >
                       {tab}
@@ -567,31 +544,31 @@ function Form() {
                   ))}
                 </div>
 
-                {/*  Recommendation Cards  */}
-                <div className="mt-8 grid gap-6">
+                {/* Recommendation Cards */}
+                <div className="mt-4 grid gap-4 max-h-[350px] overflow-y-auto pr-2 custom-scrollbar">
                   {activeTab === "Stocks" &&
                     result?.recommendations?.stocks?.map((stock, i) => (
                       <div
                         key={i}
-                        className="bg-white/95 backdrop-blur-sm rounded-2xl border-l-8 border-lime-500 p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
+                        className="bg-white/95 backdrop-blur-sm rounded-xl border-l-4 border-lime-500 p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
                       >
-                        <h4 className="text-gray-900 font-bold text-xl mb-2">
+                        <h4 className="text-gray-900 font-bold text-base mb-1">
                           {stock.name}
                         </h4>
                         {stock.symbol && (
-                          <p className="text-green-600 text-base font-semibold mb-2">
+                          <p className="text-green-600 text-xs font-semibold mb-1">
                             {stock.symbol}
                           </p>
                         )}
                         {stock.description && (
-                          <p className="text-gray-600 mt-2 text-base leading-relaxed">
+                          <p className="text-gray-600 mt-1 text-xs leading-relaxed">
                             {stock.description}
                           </p>
                         )}
-                        <p className="text-gray-500 text-base mt-3 font-medium">
+                        <p className="text-gray-500 text-xs mt-2 font-medium">
                           Price: ₹{stock.price ? stock.price.toFixed(2) : "N/A"}
                         </p>
-                        <span className="inline-block mt-4 px-4 py-2 bg-gradient-to-r from-lime-100 to-green-100 text-green-700 border-2 border-green-300 font-bold rounded-xl">
+                        <span className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-lime-100 to-green-100 text-green-700 border border-green-300 text-xs font-bold rounded-lg">
                           Invest: ₹{stock.amount}
                         </span>
                       </div>
@@ -601,25 +578,25 @@ function Form() {
                     result?.recommendations?.etf?.map((etf, i) => (
                       <div
                         key={i}
-                        className="bg-white/95 backdrop-blur-sm rounded-2xl border-l-8 border-green-500 p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
+                        className="bg-white/95 backdrop-blur-sm rounded-xl border-l-4 border-green-500 p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
                       >
-                        <h4 className="text-gray-900 font-bold text-xl mb-2">
+                        <h4 className="text-gray-900 font-bold text-base mb-1">
                           {etf.name}
                         </h4>
                         {etf.symbol && (
-                          <p className="text-green-600 text-base font-semibold mb-2">
+                          <p className="text-green-600 text-xs font-semibold mb-1">
                             {etf.symbol}
                           </p>
                         )}
                         {etf.description && (
-                          <p className="text-gray-600 mt-2 text-base leading-relaxed">
+                          <p className="text-gray-600 mt-1 text-xs leading-relaxed">
                             {etf.description}
                           </p>
                         )}
-                        <p className="text-gray-500 text-base mt-3 font-medium">
+                        <p className="text-gray-500 text-xs mt-2 font-medium">
                           Price: ₹{etf.price ? etf.price.toFixed(2) : "N/A"}
                         </p>
-                        <span className="inline-block mt-4 px-4 py-2 bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border-2 border-green-300 font-bold rounded-xl">
+                        <span className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border border-green-300 text-xs font-bold rounded-lg">
                           Invest: ₹{etf.amount}
                         </span>
                       </div>
@@ -629,117 +606,125 @@ function Form() {
                     result?.recommendations?.sip.map((sip, i) => (
                       <div
                         key={i}
-                        className="bg-white/95 backdrop-blur-sm rounded-2xl border-l-8 border-green-600 p-6 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-[1.02]"
+                        className="bg-white/95 backdrop-blur-sm rounded-xl border-l-4 border-green-600 p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
                       >
-                        <h4 className="text-gray-900 font-bold text-xl mb-2">
+                        <h4 className="text-gray-900 font-bold text-base mb-1">
                           {sip.name}
                         </h4>
                         {sip.symbol && (
-                          <p className="text-green-600 text-base font-semibold mb-2">
+                          <p className="text-green-600 text-xs font-semibold mb-1">
                             {sip.symbol}
                           </p>
                         )}
                         {sip.description && (
-                          <p className="text-gray-600 mt-2 text-base leading-relaxed">
+                          <p className="text-gray-600 mt-1 text-xs leading-relaxed">
                             {sip.description}
                           </p>
                         )}
-                        <p className="text-gray-500 text-base mt-3 font-medium">
+                        <p className="text-gray-500 text-xs mt-2 font-medium">
                           Price: ₹
                           {sip.price && !isNaN(Number(sip.price))
                             ? Number(sip.price).toFixed(2)
                             : "N/A"}
                         </p>
-                        <span className="inline-block mt-4 px-4 py-2 bg-gradient-to-r from-lime-100 to-green-100 text-green-700 border-2 border-green-300 font-bold rounded-xl">
+                        <span className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-lime-100 to-green-100 text-green-700 border border-green-300 text-xs font-bold rounded-lg">
                           Invest: ₹{sip.amount}
                         </span>
                       </div>
                     ))}
                 </div>
 
-                {/*  Investment Summary   */}
-                <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-2xl p-6 text-center shadow-xl transform hover:scale-105 transition-all duration-300">
-                    <p className="text-base text-green-100 font-semibold">
+                {/* Investment Summary Cards */}
+                <div className="mt-8 grid grid-cols-2 gap-4">
+                  <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all">
+                    <p className="text-xs text-green-100 font-semibold">
                       💸 Total Invested
                     </p>
-                    <p className="text-2xl font-bold text-white mt-2">
+                    <p className="text-lg font-bold text-white mt-1">
                       ₹ {result.total_invested?.toLocaleString("en-IN")}
                     </p>
                   </div>
 
-                  <div className="bg-gradient-to-r from-green-500 to-lime-500 rounded-2xl p-6 text-center shadow-xl transform hover:scale-105 transition-all duration-300">
-                    <p className="text-base text-lime-100 font-semibold">
-                      🧾 Uninvested Amount
+                  <div className="bg-gradient-to-r from-green-500 to-lime-500 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all">
+                    <p className="text-xs text-lime-100 font-semibold">
+                      🧾 Uninvested
                     </p>
-                    <p className="text-2xl font-bold text-white mt-2">
+                    <p className="text-lg font-bold text-white mt-1">
                       ₹ {result.uninvested_amount?.toLocaleString("en-IN")}
                     </p>
                   </div>
                 </div>
 
-                {/* === Final Return Summary === */}
-                <div className="mt-12 bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-gray-200 p-8 rounded-3xl shadow-xl max-w-2xl mx-auto">
-                  <h4 className="text-2xl font-bold text-center text-gray-900 mb-6">
-                    Investment Summary
+                {/* === UPDATED PREMIUM Investment Summary Container === */}
+                <motion.div 
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.2 }}
+                  className="mt-8 bg-white/80 backdrop-blur-md border border-white/60 p-6 rounded-2xl shadow-2xl relative overflow-hidden group"
+                >
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/10 rounded-full blur-3xl -z-10 transition-all duration-500 group-hover:bg-lime-400/20"></div>
+                  
+                  <h4 className="text-xl font-bold text-center text-gray-800 mb-6 flex items-center justify-center gap-2">
+                    <PieChart className="w-5 h-5 text-lime-600" /> Investment Summary
                   </h4>
 
-                  <div className="space-y-4 text-lg font-semibold">
-                    {/* 💰 Total Invested */}
-                    <div className="flex justify-between items-center py-3 px-4 bg-white rounded-xl shadow-sm">
-                      <span className="flex items-center gap-3 text-gray-800">
-                        💰 <span>Total Principal:</span>
+                  <div className="space-y-3">
+                    {/* Row 1: Principal */}
+                    <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
+                      <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
+                        <Wallet className="w-4 h-4 text-gray-400" /> Total Principal
                       </span>
-                      <span className="text-green-700 font-bold">
+                      <span className="text-gray-900 font-bold font-mono">
                         ₹{result.total_principal.toLocaleString("en-IN")}
                       </span>
                     </div>
 
-                    {/* 📊 Expected Return */}
-                    <div className="flex justify-between items-center py-3 px-4 bg-white rounded-xl shadow-sm">
-                      <span className="flex items-center gap-3 text-gray-800">
-                        📊 <span>Expected Return:</span>
+                    {/* Row 2: Expected Return */}
+                    <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
+                      <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
+                        <TrendingUp className="w-4 h-4 text-blue-500" /> Expected Return
                       </span>
-                      <span className="text-green-700 font-bold">
+                      <span className="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded text-xs">
                         {result.expected_return.toFixed(2)}%
                       </span>
                     </div>
 
-                    {/* 💵 Profit */}
-                    <div className="flex justify-between items-center py-3 px-4 bg-white rounded-xl shadow-sm">
-                      <span className="flex items-center gap-3 text-gray-800">
-                        💵 <span>Profit:</span>
+                    {/* Row 3: Profit */}
+                    <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
+                      <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
+                        <DollarSign className="w-4 h-4 text-green-500" /> Est. Profit
                       </span>
-                      <span className="text-green-700 font-bold">
-                        ₹{result.profit.toLocaleString("en-IN")}
+                      <span className="text-green-600 font-bold font-mono">
+                        +₹{result.profit.toLocaleString("en-IN")}
                       </span>
                     </div>
 
-                    {/* 📈 Future Value */}
-                    <div className="flex justify-between items-center py-4 px-4 bg-gradient-to-r from-lime-100 to-green-100 rounded-xl border-2 border-green-300 shadow-sm">
-                      <span className="flex items-center gap-3 text-gray-900 font-bold">
-                        📈 <span>Estimated Future Value:</span>
+                    {/* Row 4: Future Value (Highlighted) */}
+                    <div className="mt-2 flex justify-between items-center p-4 bg-gradient-to-r from-lime-500 to-green-600 rounded-xl shadow-lg text-white transform transition-transform hover:scale-[1.02]">
+                      <span className="flex items-center gap-2 font-semibold text-sm">
+                        <ArrowRight className="w-4 h-4" /> Future Value
                       </span>
-                      <span className="text-green-800 font-extrabold text-xl">
-                        ₹
-                        {result.future_value.toLocaleString("en-IN", {
-                          minimumFractionDigits: 1,
-                          maximumFractionDigits: 1,
+                      <span className="font-extrabold text-lg tracking-tight">
+                        ₹{result.future_value.toLocaleString("en-IN", {
+                          minimumFractionDigits: 0,
+                          maximumFractionDigits: 0,
                         })}
                       </span>
                     </div>
                   </div>
-                </div>
+                </motion.div>
 
                 {/* Save Recommendation Button */}
-                <div className="mt-10">
+                <div className="mt-8 mb-4">
                   <button
                     onClick={handleSaveRecommendation}
-                    className="w-full bg-gradient-to-r from-green-600 to-lime-600 hover:from-green-700 hover:to-lime-700 hover:shadow-2xl transform hover:scale-[1.02] transition-all duration-300 text-white font-bold py-4 rounded-2xl shadow-xl text-lg"
+                    className="group w-full relative overflow-hidden bg-gray-900 text-white font-bold py-3.5 rounded-xl shadow-xl transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 active:scale-[0.98]"
                   >
-                    {recommendationExists
-                      ? "Modify Recommendation "
-                      : "Save Recommendation"}
+                    <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                    <span className="flex items-center justify-center gap-2 relative z-10">
+                      {recommendationExists ? <Edit3 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
+                      {recommendationExists ? "Modify Recommendation" : "Save Recommendation"}
+                    </span>
                   </button>
                 </div>
               </div>
