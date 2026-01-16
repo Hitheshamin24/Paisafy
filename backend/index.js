@@ -20,7 +20,7 @@ const userRoutes = require("./routes/userRoutes");
 // Your existing routes and setup (Clerk middleware is inside userRoutes)
 app.post("/api/recommend", async (req, res) => {
   try {
-    const flaskRes = await axios.post("http://127.0.0.1:8000/predict", req.body);
+    const flaskRes = await axios.post(`${process.env.FLASK_URL}/predict`, req.body);
     res.json(flaskRes.data);
   } catch (err) {
     console.error("Error calling Flask:", err.message);

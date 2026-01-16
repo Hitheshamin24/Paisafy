@@ -72,7 +72,7 @@ function Form() {
       try {
         const token = await getToken();
         const res = await axios.get(
-          `http://localhost:5000/api/check-recommendation/${user.id}`,
+          `${import.meta.env.VITE_BACKEND_URL}/api/check-recommendation/${user.id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         setRecommendationExists(res.data.exists);
@@ -88,7 +88,7 @@ function Form() {
     try {
       const token = await getToken();
       await axios.post(
-        "http://localhost:5000/api/save-recommendation",
+        `${import.meta.env.VITE_BACKEND_URL}/api/save-recommendation`,
         { formData, result },
         {
           headers: {
@@ -190,7 +190,7 @@ function Form() {
     setResult(null);
 
     try {
-      const res = await axios.post("http://localhost:5000/api/recommend", {
+      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/recommend`, {
         ...formData,
         income: Number(formData.income),
         amountToInvest: Number(formData.amountToInvest),
@@ -201,7 +201,7 @@ function Form() {
 
       const token = await getToken();
       const checkRes = await axios.get(
-        `http://localhost:5000/api/check-recommendation/${user.id}`,
+        `${import.meta.env.VITE_BACKEND_URL}/api/check-recommendation/${user.id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
