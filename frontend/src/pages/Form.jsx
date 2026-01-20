@@ -3,7 +3,7 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import { useAuth, useUser } from "@clerk/clerk-react";
-import { TrendingUp, DollarSign, PieChart, Wallet, ArrowRight, Save, Edit3 } from "lucide-react"; // Added icons for better look
+import { TrendingUp, IndianRupee, PieChart, Wallet, ArrowRight, Save, Edit3 } from "lucide-react"; // Added icons for better look
 
 function Form() {
   const [formData, setFormData] = useState({
@@ -692,7 +692,7 @@ function Form() {
                     {/* Row 3: Profit */}
                     <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
                       <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
-                        <DollarSign className="w-4 h-4 text-green-500" /> Est. Profit
+                        <IndianRupee  className="w-4 h-4 text-green-500" /> Est. Profit
                       </span>
                       <span className="text-green-600 font-bold font-mono">
                         +₹{result.profit.toLocaleString("en-IN")}
