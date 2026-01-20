@@ -8,11 +8,9 @@ const { requireAuth } = require("@clerk/express");
 router.use(requireAuth());
 
 router.post("/", async (req, res) => {
-  console.log("POST /api/user called");
-  console.log("req.auth:", req.auth);
+  
 
   if (!req.auth || !req.auth.userId) {
-    console.log("Unauthorized: no userId in req.auth");
     return res.status(401).json({ error: "Unauthorized" });
   }
 
