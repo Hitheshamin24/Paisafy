@@ -21,7 +21,7 @@ const Home = () => {
       try {
         const token = await getToken();
         const res = await axios.post(
-          "http://localhost:5000/api/user",
+          `${import.meta.env.VITE_BACKEND_URL}/api/user`,
           {},
           { headers: { Authorization: `Bearer ${token}` } }
         );
