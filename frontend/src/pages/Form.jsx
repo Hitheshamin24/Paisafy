@@ -517,7 +517,7 @@ function Form() {
                               </div>
 
                               <div className="text-gray-700 mt-2 text-center font-bold text-xs bg-white px-2 py-1 rounded-lg border border-gray-200 inline-block w-full">
-                                ₹{invested.toLocaleString("en-IN")} ({item.value.toFixed(1)}%)
+                                ₹{(invested ?? 0).toLocaleString("en-IN")} ({item.value.toFixed(1)}%)
                               </div>
                             </div>
                           );
@@ -597,7 +597,7 @@ function Form() {
                           Price: ₹{etf.price ? etf.price.toFixed(2) : "N/A"}
                         </p>
                         <span className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-green-100 to-lime-100 text-green-700 border border-green-300 text-xs font-bold rounded-lg">
-                          Invest: ₹{etf.amount}
+                          Invest: ₹{etf.amount.toFixed(2)}
                         </span>
                       </div>
                     ))}
@@ -641,7 +641,7 @@ function Form() {
                       💸 Total Invested
                     </p>
                     <p className="text-lg font-bold text-white mt-1">
-                      ₹ {result.total_invested?.toLocaleString("en-IN")}
+                      ₹ {(result.total_invested ?? 0).toLocaleString("en-IN")}
                     </p>
                   </div>
 
@@ -650,7 +650,7 @@ function Form() {
                       🧾 Uninvested
                     </p>
                     <p className="text-lg font-bold text-white mt-1">
-                      ₹ {result.uninvested_amount?.toLocaleString("en-IN")}
+                      ₹ {(result.uninvested_amount ?? 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                 </div>
@@ -675,7 +675,7 @@ function Form() {
                         <Wallet className="w-4 h-4 text-gray-400" /> Total Principal
                       </span>
                       <span className="text-gray-900 font-bold font-mono">
-                        ₹{result.total_principal.toLocaleString("en-IN")}
+                        ₹{(result.total_principal ?? 0).toLocaleString("en-IN")}
                       </span>
                     </div>
 
@@ -695,7 +695,7 @@ function Form() {
                         <IndianRupee  className="w-4 h-4 text-green-500" /> Est. Profit
                       </span>
                       <span className="text-green-600 font-bold font-mono">
-                        +₹{result.profit.toLocaleString("en-IN")}
+                        +₹{(result.profit ?? 0).toLocaleString("en-IN")}
                       </span>
                     </div>
 
@@ -705,7 +705,7 @@ function Form() {
                         <ArrowRight className="w-4 h-4" /> Future Value
                       </span>
                       <span className="font-extrabold text-lg tracking-tight">
-                        ₹{result.future_value.toLocaleString("en-IN", {
+                        ₹{(result.future_value ?? 0).toLocaleString("en-IN", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
                         })}
