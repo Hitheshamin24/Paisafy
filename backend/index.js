@@ -210,7 +210,13 @@ app.post("/api/recommend", async (req, res) => {
       uninvested_amount: Math.round(uninvested),
     });
   } catch (err) {
-    console.error("Recommendation Error:", err.message);
+    console.error(
+      "Recommendation Error:",
+      err.response?.status,
+      err.response?.data || err.message,
+      err.config?.url,
+    );
+
     res.status(500).json({ error: "Failed to get recommendation" });
   }
 });
