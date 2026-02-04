@@ -31,6 +31,7 @@ app.post("/api/recommend", async (req, res) => {
       `${process.env.FLASK_URL}/predict`,
       req.body,
     );
+    console.log("Calling Flask at:", process.env.FLASK_URL);
 
     const { allocations, expected_return } = flaskRes.data;
     const totalAmount = req.body.amountToInvest;
@@ -176,7 +177,6 @@ app.post("/api/recommend", async (req, res) => {
     const months = Number(req.body.horizon || 1) * 12;
 
     const monthlyInvestment = totalPrincipal;
-    
 
     const annualRate = expected_return / 100;
     const monthlyRate = annualRate / 12;
