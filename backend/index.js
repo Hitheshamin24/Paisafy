@@ -239,12 +239,17 @@ app.post("/api/recommend", async (req, res) => {
     });
   } catch (err) {
     console.error("===== RECOMMEND ERROR =====");
-console.error("URL:", err.config?.url);
-console.error("STATUS:", err.response?.status);
-console.error("DATA:", err.response?.data);
-console.error("MESSAGE:", err.message);
-console.error("===========================");
 
+    if (err.response) {
+      console.error("URL:", err.config?.url);
+      console.error("STATUS:", err.response.status);
+      console.error("HEADERS:", err.response.headers);
+      console.error("DATA:", err.response.data);
+    } else {
+      console.error("NO RESPONSE ERROR:", err.message);
+    }
+
+    console.error("===========================");
 
     res.status(500).json({ error: "Failed to get recommendation" });
   }
