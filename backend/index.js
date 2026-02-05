@@ -30,10 +30,22 @@ const stockUniverse = require("./data/stocks");
 app.post("/api/recommend", async (req, res) => {
   try {
     // 1️⃣ Call Flask ML
-    const flaskRes = await axios.post(
-      `${process.env.FLASK_URL}/predict`,
-      req.body,
-    );
+    async function callFlask(payload) {
+      for (let i = 0; i < 3; i++) {
+        try {
+          return await axios.post(`${process.env.FLASK_URL}/predict`, payload, {
+            timeout: 60000,
+          });
+        } catch (err) {
+          if (i === 2) throw err;
+          await new Promise((r) => setTimeout(r, 3000));
+        }
+      }
+    }
+
+    // 👇 use here
+    const flaskRes = await callFlask(req.body);
+
     console.log("Calling Flask at:", process.env.FLASK_URL);
 
     const { allocations, expected_return } = flaskRes.data;
@@ -45,7 +57,6 @@ app.post("/api/recommend", async (req, res) => {
       etf: [],
     };
 
-    // 2️⃣ STOCKS
     // 2️⃣ STOCKS
     if (allocations.stocks > 0) {
       const sectors = req.body.sectors || [];
@@ -61,23 +72,27 @@ app.post("/api/recommend", async (req, res) => {
       const perStockBudget = investAmount / selectedStocks.length;
 
       // MAIN BUY LOOP
-      for (const stock of selectedStocks) {
-        const price = await getStockPrice(stock.symbol);
-        if (!price || price <= 0) continue;
+      const stockResults = await Promise.allSettled(
+        selectedStocks.map(async (stock) => {
+          const price = await getStockPrice(stock.symbol);
+          if (!price || price <= 0) return null;
 
-        const quantity = Math.floor(perStockBudget / price);
-        if (quantity === 0) continue;
+          const quantity = Math.floor(perStockBudget / price);
+          if (!quantity) return null;
 
-        const actualAmount = quantity * price;
+          return {
+            name: stock.name,
+            symbol: stock.symbol,
+            price: Number(price.toFixed(2)),
+            quantity,
+            amount: Number((quantity * price).toFixed(2)),
+          };
+        }),
+      );
 
-        recommendations.stocks.push({
-          name: stock.name,
-          symbol: stock.symbol,
-          price: Number(price.toFixed(2)),
-          quantity,
-          amount: Number(actualAmount.toFixed(2)),
-        });
-      }
+      recommendations.stocks = stockResults
+        .filter((r) => r.status === "fulfilled" && r.value)
+        .map((r) => r.value);
 
       // 🔥 FALLBACK — IF NOTHING WAS BOUGHT
       if (recommendations.stocks.length === 0 && selectedStocks.length > 0) {
@@ -115,19 +130,25 @@ app.post("/api/recommend", async (req, res) => {
       const investAmount = (allocations.sip / 100) * totalAmount;
       const perFund = investAmount / sipList.length;
 
-      for (const fund of sipList) {
-        const nav = await getMutualFundNAV(fund.amfi);
-        if (!nav) continue;
+      const sipResults = await Promise.allSettled(
+        sipList.map(async (fund) => {
+          const nav = await getMutualFundNAV(fund.amfi);
+          if (!nav) return null;
 
-        const units = perFund / nav;
+          const units = perFund / nav;
 
-        recommendations.sip.push({
-          name: fund.name,
-          price: Number(nav.toFixed(2)),
-          units: Number(units.toFixed(3)),
-          amount: Number(perFund.toFixed(2)),
-        });
-      }
+          return {
+            name: fund.name,
+            price: Number(nav.toFixed(2)),
+            units: Number(units.toFixed(3)),
+            amount: Number(perFund.toFixed(2)),
+          };
+        }),
+      );
+
+      recommendations.sip = sipResults
+        .filter((r) => r.status === "fulfilled" && r.value)
+        .map((r) => r.value);
     }
 
     // 4️⃣ ETFs
@@ -137,23 +158,27 @@ app.post("/api/recommend", async (req, res) => {
       const investAmount = (allocations.etf / 100) * totalAmount;
       const perETF = investAmount / etfList.length;
 
-      for (const etf of etfList) {
-        const price = await getStockPrice(etf.symbol);
-        if (!price) continue;
+      const etfResults = await Promise.allSettled(
+        etfList.map(async (etf) => {
+          const price = await getStockPrice(etf.symbol);
+          if (!price) return null;
 
-        const units = Math.floor(perETF / price);
-        if (units === 0) continue;
+          const units = Math.floor(perETF / price);
+          if (!units) return null;
 
-        const actualAmount = units * price;
+          return {
+            name: etf.name,
+            symbol: etf.symbol,
+            price,
+            quantity: units,
+            amount: units * price,
+          };
+        }),
+      );
 
-        recommendations.etf.push({
-          name: etf.name,
-          symbol: etf.symbol,
-          price,
-          quantity: units,
-          amount: actualAmount,
-        });
-      }
+      recommendations.etf = etfResults
+        .filter((r) => r.status === "fulfilled" && r.value)
+        .map((r) => r.value);
     }
 
     // ===== FINAL TOTAL CALCULATIONS =====
