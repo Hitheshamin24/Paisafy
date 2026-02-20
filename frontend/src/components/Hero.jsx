@@ -17,11 +17,8 @@ const Hero = ({ onGetStartedClick }) => {
   };
 
   return (
-    <section className="bg-gradient-to-br from-[#f8f9f3] via-[#f6f7f1] to-[#f4f5ef] pt-20 pb-8 sm:pt-16 sm:pb-12 lg:pt-16 lg:pb-12 px-4 sm:px-6 lg:px-8">
-      {/* 👆 FIX APPLIED ABOVE: 
-         - Changed 'py-6' to 'pt-24 pb-8'.
-         - 'pt-24' adds 6rem (96px) of space at the top, which pushes content below the Navbar.
-      */}
+    <section className="bg-gradient-to-br from-[#f8f9f3] via-[#f6f7f1] to-[#f4f5ef] pt-20 pb-8 sm:pt-16 sm:pb-12 mt-10  lg:pt-16 lg:pb-12 px-4 sm:px-6 lg:px-8 ">
+     
       
       <div className="max-w-7xl mx-auto w-full">
         {/* Heading Section */}

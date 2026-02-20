@@ -13,6 +13,7 @@ app.use(express.json());
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
 });
+
 // Connect to MongoDB
 connectDB();
 
@@ -20,16 +21,16 @@ connectDB();
 const userRoutes = require("./routes/userRoutes");
 
 const etfUniverse = require("./data/etfs");
-const sipUniverse = require("./data/mutualFunds");
+const mutualFundUniverse = require("./data/mutualFunds");
 
 const { getMutualFundNAV } = require("./services/navServices");
-
 const { getStockPrice } = require("./services/priceServices");
+
 const stockUniverse = require("./data/stocks");
 
 app.post("/api/recommend", async (req, res) => {
   try {
-    // 1️⃣ Call Flask ML
+    // Call Flask ML
     async function callFlask(payload) {
       for (let i = 0; i < 3; i++) {
         try {
@@ -43,7 +44,6 @@ app.post("/api/recommend", async (req, res) => {
       }
     }
 
-    // 👇 use here
     const flaskRes = await callFlask(req.body);
 
     console.log("Calling Flask at:", process.env.FLASK_URL);
@@ -53,11 +53,11 @@ app.post("/api/recommend", async (req, res) => {
 
     let recommendations = {
       stocks: [],
-      sip: [],
+      mutualfund: [],
       etf: [],
     };
 
-    // 2️⃣ STOCKS
+    // STOCKS
     if (allocations.stocks > 0) {
       const sectors = req.body.sectors || [];
       let selectedStocks = [];
@@ -71,7 +71,6 @@ app.post("/api/recommend", async (req, res) => {
       const investAmount = (allocations.stocks / 100) * totalAmount;
       const perStockBudget = investAmount / selectedStocks.length;
 
-      // MAIN BUY LOOP
       const stockResults = await Promise.allSettled(
         selectedStocks.map(async (stock) => {
           const price = await getStockPrice(stock.symbol);
@@ -94,7 +93,7 @@ app.post("/api/recommend", async (req, res) => {
         .filter((r) => r.status === "fulfilled" && r.value)
         .map((r) => r.value);
 
-      // 🔥 FALLBACK — IF NOTHING WAS BOUGHT
+      // Fallback if nothing bought
       if (recommendations.stocks.length === 0 && selectedStocks.length > 0) {
         let cheapest = null;
 
@@ -123,15 +122,15 @@ app.post("/api/recommend", async (req, res) => {
       }
     }
 
-    // 3️⃣ SIPs (REAL MUTUAL FUNDS)
-    if (allocations.sip > 0) {
-      const sipList = sipUniverse.index;
+    // MUTUAL FUNDS
+    if (allocations.mutualfund > 0) {
+      const fundList = mutualFundUniverse.index;
 
-      const investAmount = (allocations.sip / 100) * totalAmount;
-      const perFund = investAmount / sipList.length;
+      const investAmount = (allocations.mutualfund / 100) * totalAmount;
+      const perFund = investAmount / fundList.length;
 
-      const sipResults = await Promise.allSettled(
-        sipList.map(async (fund) => {
+      const fundResults = await Promise.allSettled(
+        fundList.map(async (fund) => {
           const nav = await getMutualFundNAV(fund.amfi);
           if (!nav) return null;
 
@@ -146,12 +145,12 @@ app.post("/api/recommend", async (req, res) => {
         }),
       );
 
-      recommendations.sip = sipResults
+      recommendations.mutualfund = fundResults
         .filter((r) => r.status === "fulfilled" && r.value)
         .map((r) => r.value);
     }
 
-    // 4️⃣ ETFs
+    // ETFs
     if (allocations.etf > 0) {
       const etfList = etfUniverse.index;
 
@@ -181,14 +180,14 @@ app.post("/api/recommend", async (req, res) => {
         .map((r) => r.value);
     }
 
-    // ===== FINAL TOTAL CALCULATIONS =====
+    // Final calculations
 
     const stockInvested = recommendations.stocks.reduce(
       (sum, s) => sum + s.amount,
       0,
     );
 
-    const sipInvested = recommendations.sip.reduce(
+    const mutualFundInvested = recommendations.mutualfund.reduce(
       (sum, s) => sum + s.amount,
       0,
     );
@@ -198,7 +197,7 @@ app.post("/api/recommend", async (req, res) => {
       0,
     );
 
-    const totalPrincipal = stockInvested + sipInvested + etfInvested;
+    const totalPrincipal = stockInvested + mutualFundInvested + etfInvested;
 
     const uninvested = totalAmount - totalPrincipal;
 
@@ -209,7 +208,6 @@ app.post("/api/recommend", async (req, res) => {
     const annualRate = expected_return / 100;
     const monthlyRate = annualRate / 12;
 
-    // SIP future value formula
     const futureValue =
       monthlyInvestment *
       ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) *
@@ -224,7 +222,7 @@ app.post("/api/recommend", async (req, res) => {
 
       allocations: {
         stocks: { percent: allocations.stocks },
-        sip: { percent: allocations.sip },
+        mutualfund: { percent: allocations.mutualfund },
         etf: { percent: allocations.etf },
       },
 
@@ -258,7 +256,7 @@ app.post("/api/recommend", async (req, res) => {
 // Use recommendation routes
 app.use("/api", require("./routes/recommendationRoutes"));
 
-// Use the user routes under
+// Use the user routes
 app.use("/api/user", userRoutes);
 
 const PORT = process.env.PORT || 5000;

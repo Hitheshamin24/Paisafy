@@ -3,7 +3,15 @@ import axios from "axios";
 import { motion } from "framer-motion";
 import { SignedIn, SignedOut, RedirectToSignIn } from "@clerk/clerk-react";
 import { useAuth, useUser } from "@clerk/clerk-react";
-import { TrendingUp, IndianRupee, PieChart, Wallet, ArrowRight, Save, Edit3 } from "lucide-react"; // Added icons for better look
+import {
+  TrendingUp,
+  IndianRupee,
+  PieChart,
+  Wallet,
+  ArrowRight,
+  Save,
+  Edit3,
+} from "lucide-react"; // Added icons for better look
 
 function Form() {
   const [formData, setFormData] = useState({
@@ -24,25 +32,23 @@ function Form() {
         return (
           result.recommendations?.stocks?.reduce(
             (sum, stock) => sum + (stock.amount || 0),
-            0
+            0,
           ) || 0
         );
       case "ETFs":
         return (
           result.recommendations?.etf?.reduce(
             (sum, etf) => sum + (etf.amount || 0),
-            0
+            0,
           ) || 0
         );
-      case "SIPs":
+      case "Mutual Funds":
         return (
-          result.recommendations?.sip?.reduce((sum, sip) => {
-            const amount = sip.amount;
-            if (amount === "N/A" || amount === null || amount === undefined) {
-              return sum + 0;
-            }
-            const numericAmount = parseFloat(amount);
-            return sum + (isNaN(numericAmount) ? 0 : numericAmount);
+          result.recommendations?.mutualfund?.reduce((sum, mf) => {
+            const amount = mf.amount;
+            if (amount === "N/A" || amount == null) return sum;
+            const num = parseFloat(amount);
+            return sum + (isNaN(num) ? 0 : num);
           }, 0) || 0
         );
       default:
@@ -73,7 +79,7 @@ function Form() {
         const token = await getToken();
         const res = await axios.get(
           `${import.meta.env.VITE_BACKEND_URL}/api/check-recommendation/${user.id}`,
-          { headers: { Authorization: `Bearer ${token}` } }
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         setRecommendationExists(res.data.exists);
       } catch (err) {
@@ -94,12 +100,12 @@ function Form() {
           headers: {
             Authorization: `Bearer ${token}`,
           },
-        }
+        },
       );
       alert(
         recommendationExists
           ? "Recommendation modified successfully!"
-          : "Recommendation saved successfully!"
+          : "Recommendation saved successfully!",
       );
       setRecommendationExists(true);
     } catch (error) {
@@ -190,12 +196,15 @@ function Form() {
     setResult(null);
 
     try {
-      const res = await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/recommend`, {
-        ...formData,
-        income: Number(formData.income),
-        amountToInvest: Number(formData.amountToInvest),
-        horizon: Number(formData.horizon),
-      });
+      const res = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/api/recommend`,
+        {
+          ...formData,
+          income: Number(formData.income),
+          amountToInvest: Number(formData.amountToInvest),
+          horizon: Number(formData.horizon),
+        },
+      );
 
       setResult(res.data);
 
@@ -204,7 +213,7 @@ function Form() {
         `${import.meta.env.VITE_BACKEND_URL}/api/check-recommendation/${user.id}`,
         {
           headers: { Authorization: `Bearer ${token}` },
-        }
+        },
       );
 
       setRecommendationExists(checkRes.data.exists);
@@ -212,7 +221,7 @@ function Form() {
       console.error(err.response?.data || err.message);
       alert(
         "Error generating recommendations: " +
-          (err.response?.data?.message || err.message)
+          (err.response?.data?.message || err.message),
       );
     } finally {
       setLoading(false);
@@ -391,7 +400,7 @@ function Form() {
                       Preferred Types
                     </label>
                     <div className="flex flex-wrap gap-2">
-                      {["Stocks", "SIPs", "ETFs"].map((type) => (
+                      {["Stocks", "ETFs", "Mutual Funds"].map((type) => (
                         <label
                           key={type}
                           className="text-gray-700 cursor-pointer hover:text-green-600 flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-lg border border-gray-200 hover:border-lime-300 hover:shadow-sm transition-all duration-200"
@@ -483,17 +492,20 @@ function Form() {
                           {
                             label: "Stocks",
                             value: result.allocations?.stocks?.percent || 0,
-                            color: "bg-gradient-to-r from-lime-500 to-green-600",
+                            color:
+                              "bg-gradient-to-r from-lime-500 to-green-600",
                           },
                           {
                             label: "ETFs",
                             value: result.allocations?.etf?.percent || 0,
-                            color: "bg-gradient-to-r from-green-500 to-lime-500",
+                            color:
+                              "bg-gradient-to-r from-green-500 to-lime-500",
                           },
                           {
-                            label: "SIPs",
-                            value: result.allocations?.sip?.percent || 0,
-                            color: "bg-gradient-to-r from-green-600 to-lime-600",
+                            label: "Mutual Funds",
+                            value: result.allocations?.mutualfund?.percent || 0,
+                            color:
+                              "bg-gradient-to-r from-green-600 to-lime-600",
                           },
                         ].map((item) => {
                           const invested = getActualInvested(item.label);
@@ -517,7 +529,8 @@ function Form() {
                               </div>
 
                               <div className="text-gray-700 mt-2 text-center font-bold text-xs bg-white px-2 py-1 rounded-lg border border-gray-200 inline-block w-full">
-                                ₹{(invested ?? 0).toLocaleString("en-IN")} ({item.value.toFixed(1)}%)
+                                ₹{(invested ?? 0).toLocaleString("en-IN")} (
+                                {item.value.toFixed(1)}%)
                               </div>
                             </div>
                           );
@@ -529,7 +542,7 @@ function Form() {
 
                 {/* === Tabs === */}
                 <div className="flex justify-center gap-3 mt-6">
-                  {["Stocks", "ETFs", "SIPs"].map((tab) => (
+                  {["Stocks", "ETFs", "Mutual Funds"].map((tab) => (
                     <button
                       key={tab}
                       onClick={() => setActiveTab(tab)}
@@ -602,33 +615,33 @@ function Form() {
                       </div>
                     ))}
 
-                  {activeTab === "SIPs" &&
-                    result?.recommendations?.sip.map((sip, i) => (
+                  {activeTab === "Mutual Funds" &&
+                   result?.recommendations?.mutualfund?.map((mf, i) => (
                       <div
                         key={i}
                         className="bg-white/95 backdrop-blur-sm rounded-xl border-l-4 border-green-600 p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
                       >
                         <h4 className="text-gray-900 font-bold text-base mb-1">
-                          {sip.name}
+                          {mf.name}
                         </h4>
-                        {sip.symbol && (
+                        {mf.symbol && (
                           <p className="text-green-600 text-xs font-semibold mb-1">
-                            {sip.symbol}
+                            {mf.symbol}
                           </p>
                         )}
-                        {sip.description && (
+                        {mf.description && (
                           <p className="text-gray-600 mt-1 text-xs leading-relaxed">
-                            {sip.description}
+                            {mf.description}
                           </p>
                         )}
                         <p className="text-gray-500 text-xs mt-2 font-medium">
                           Price: ₹
-                          {sip.price && !isNaN(Number(sip.price))
-                            ? Number(sip.price).toFixed(2)
+                          {mf.price && !isNaN(Number(mf.price))
+                            ? Number(mf.price).toFixed(2)
                             : "N/A"}
                         </p>
                         <span className="inline-block mt-2 px-3 py-1 bg-gradient-to-r from-lime-100 to-green-100 text-green-700 border border-green-300 text-xs font-bold rounded-lg">
-                          Invest: ₹{sip.amount}
+                          Invest: ₹{mf.amount}
                         </span>
                       </div>
                     ))}
@@ -638,7 +651,7 @@ function Form() {
                 <div className="mt-8 grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all">
                     <p className="text-xs text-green-100 font-semibold">
-                      💸 Total Invested
+                       Total Invested
                     </p>
                     <p className="text-lg font-bold text-white mt-1">
                       ₹ {(result.total_invested ?? 0).toLocaleString("en-IN")}
@@ -650,29 +663,32 @@ function Form() {
                       🧾 Uninvested
                     </p>
                     <p className="text-lg font-bold text-white mt-1">
-                      ₹ {(result.uninvested_amount ?? 0).toLocaleString("en-IN")}
+                      ₹{" "}
+                      {(result.uninvested_amount ?? 0).toLocaleString("en-IN")}
                     </p>
                   </div>
                 </div>
 
                 {/* === UPDATED PREMIUM Investment Summary Container === */}
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
                   className="mt-8 bg-white/80 backdrop-blur-md border border-white/60 p-6 rounded-2xl shadow-2xl relative overflow-hidden group"
                 >
                   <div className="absolute top-0 right-0 w-32 h-32 bg-lime-400/10 rounded-full blur-3xl -z-10 transition-all duration-500 group-hover:bg-lime-400/20"></div>
-                  
+
                   <h4 className="text-xl font-bold text-center text-gray-800 mb-6 flex items-center justify-center gap-2">
-                    <PieChart className="w-5 h-5 text-lime-600" /> Investment Summary
+                    <PieChart className="w-5 h-5 text-lime-600" /> Investment
+                    Summary
                   </h4>
 
                   <div className="space-y-3">
                     {/* Row 1: Principal */}
                     <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
                       <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
-                        <Wallet className="w-4 h-4 text-gray-400" /> Total Principal
+                        <Wallet className="w-4 h-4 text-gray-400" /> Total
+                        Principal
                       </span>
                       <span className="text-gray-900 font-bold font-mono">
                         ₹{(result.total_principal ?? 0).toLocaleString("en-IN")}
@@ -682,7 +698,8 @@ function Form() {
                     {/* Row 2: Expected Return */}
                     <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
                       <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
-                        <TrendingUp className="w-4 h-4 text-blue-500" /> Expected Return
+                        <TrendingUp className="w-4 h-4 text-blue-500" />{" "}
+                        Expected Return
                       </span>
                       <span className="text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded text-xs">
                         {result.expected_return.toFixed(2)}%
@@ -692,7 +709,8 @@ function Form() {
                     {/* Row 3: Profit */}
                     <div className="flex justify-between items-center p-3 rounded-xl hover:bg-white/60 transition-colors border border-transparent hover:border-gray-100">
                       <span className="flex items-center gap-3 text-gray-600 font-medium text-sm">
-                        <IndianRupee  className="w-4 h-4 text-green-500" /> Est. Profit
+                        <IndianRupee className="w-4 h-4 text-green-500" /> Est.
+                        Profit
                       </span>
                       <span className="text-green-600 font-bold font-mono">
                         +₹{(result.profit ?? 0).toLocaleString("en-IN")}
@@ -705,7 +723,8 @@ function Form() {
                         <ArrowRight className="w-4 h-4" /> Future Value
                       </span>
                       <span className="font-extrabold text-lg tracking-tight">
-                        ₹{(result.future_value ?? 0).toLocaleString("en-IN", {
+                        ₹
+                        {(result.future_value ?? 0).toLocaleString("en-IN", {
                           minimumFractionDigits: 0,
                           maximumFractionDigits: 0,
                         })}
@@ -722,8 +741,14 @@ function Form() {
                   >
                     <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:animate-shimmer" />
                     <span className="flex items-center justify-center gap-2 relative z-10">
-                      {recommendationExists ? <Edit3 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-                      {recommendationExists ? "Modify Recommendation" : "Save Recommendation"}
+                      {recommendationExists ? (
+                        <Edit3 className="w-4 h-4" />
+                      ) : (
+                        <Save className="w-4 h-4" />
+                      )}
+                      {recommendationExists
+                        ? "Modify Recommendation"
+                        : "Save Recommendation"}
                     </span>
                   </button>
                 </div>

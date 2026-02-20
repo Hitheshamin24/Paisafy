@@ -29,7 +29,7 @@ const Navbar = ({ onGetStartedClick }) => {
         <Link
           to="#"
           className="flex items-center space-x-3"
-          onClick={() => window.scrollTo(top)}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         >
           <img src={logo} alt="Paisafy Logo" className="h-8 w-auto" />
           <span className="text-xl font-bold tracking-wide ml-3">Paisafy</span>

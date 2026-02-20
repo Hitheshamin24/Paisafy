@@ -39,15 +39,14 @@ const Home = () => {
   return (
     <>
       <Navbar onGetStartedClick={scrollToForm} />{" "}
-      {/* Button will scroll down */}
-      <Hero onGetStartedClick={scrollToForm} /> {/* Optional */}
+      
+      <Hero onGetStartedClick={scrollToForm} /> 
       <About />
       <HowItWorks />
       <div ref={formRef}>
         <SignedIn>
           <Form />
         </SignedIn>
-        {/* SignedOut -> show nothing, so this does it by default */}
       </div>
       <Footer />
     </>

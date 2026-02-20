@@ -11,8 +11,83 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 RANDOM_STATE = 42
 N_SAMPLES = 7000
 
-INVESTMENT_TYPES = ["Stocks", "SIPs", "ETFs"]
+INVESTMENT_TYPES = ["Stocks", "MutualFunds", "ETFs"]
 
+# =========================
+# SMART FINANCIAL ADVISOR
+# =========================
+def get_base_allocation(risk, horizon, goal, experience):
+    alloc = {"Stocks": 0.0, "MutualFunds": 0.0, "ETFs": 0.0}
+
+    # ===== RISK BASE =====
+    if risk == "low":
+        alloc["MutualFunds"] = 60
+        alloc["ETFs"] = 30
+        alloc["Stocks"] = 10
+
+    elif risk == "medium":
+        alloc["MutualFunds"] = 40
+        alloc["Stocks"] = 40
+        alloc["ETFs"] = 20
+
+    else:  # high
+        alloc["Stocks"] = 70
+        alloc["MutualFunds"] = 20
+        alloc["ETFs"] = 10
+
+    # ===== HORIZON ADJUSTMENT =====
+    if horizon >= 10:
+        alloc["Stocks"] += 10
+        alloc["MutualFunds"] += 5
+        alloc["ETFs"] -= 15
+
+    elif horizon <= 3:
+        alloc["ETFs"] += 20
+        alloc["Stocks"] -= 15
+        alloc["MutualFunds"] -= 5
+
+    # ===== GOAL ADJUSTMENT =====
+    if goal == "Retirement":
+        alloc["MutualFunds"] += 10
+        alloc["Stocks"] += 5
+
+    elif goal == "Child Education":
+        alloc["MutualFunds"] += 10
+
+    elif goal == "Short-Term Gains":
+        alloc["ETFs"] += 15
+        alloc["Stocks"] += 5
+
+    # ===== EXPERIENCE ADJUSTMENT =====
+    if experience == "Beginner":
+        alloc["MutualFunds"] += 10
+        alloc["Stocks"] -= 10
+
+    elif experience == "Expert":
+        alloc["Stocks"] += 10
+
+    return alloc
+
+
+def normalize_allocation(alloc):
+    # Ensure no negative values
+    for k in alloc:
+        alloc[k] = max(0, alloc[k])
+
+    total = sum(alloc.values())
+
+    if total == 0:
+        return {"Stocks": 33.3, "MutualFunds": 33.3, "ETFs": 33.3}
+
+    for k in alloc:
+        alloc[k] = (alloc[k] / total) * 100
+
+    return alloc
+
+
+# =========================
+# DATA GENERATION
+# =========================
 def create_synthetic_data(n_samples=N_SAMPLES):
     np.random.seed(RANDOM_STATE)
     rows = []
@@ -35,71 +110,59 @@ def create_synthetic_data(n_samples=N_SAMPLES):
             "Expert"
         ])
 
-        # -------- Preferred Types (CRITICAL) --------
-        num_types = np.random.randint(1, 4)
-        preferred_types = np.random.choice(
-            INVESTMENT_TYPES,
-            size=num_types,
-            replace=False
-        ).tolist()
+        # -------- BASE ALLOCATION --------
+        alloc = get_base_allocation(risk, horizon, goal, experience)
 
-        num_preferred_types = len(preferred_types)
+        # -------- ADD NOISE (REALISM) --------
+        for k in alloc:
+            noise = np.random.normal(0, 5)
+            alloc[k] += noise
 
-        # -------- Expected Return --------
+        # -------- NORMALIZE --------
+        alloc = normalize_allocation(alloc)
+
+        # -------- EXPECTED RETURN --------
         base_return = {"low": 8, "medium": 12, "high": 18}[risk]
-        experience_bonus = {"Beginner": 0, "Intermediate": 1.5, "Expert": 3}[experience]
+
         horizon_bonus = min(horizon * 0.5, 5)
+        experience_bonus = {"Beginner": 0, "Intermediate": 1.5, "Expert": 3}[experience]
 
-        expected_return = base_return + experience_bonus + horizon_bonus
-        expected_return += np.random.normal(0, 1.2)
+        expected_return = base_return + horizon_bonus + experience_bonus
+
+        # Influence from allocation
+        expected_return += (alloc["Stocks"] * 0.05)
+        expected_return -= (alloc["ETFs"] * 0.02)
+
+        expected_return += np.random.normal(0, 1.0)
         expected_return = np.clip(expected_return, 5, 25)
-        # -------- Allocation Logic (100% RULE) --------
-        alloc = {"Stocks": 0.0, "SIPs": 0.0, "ETFs": 0.0}
 
-        if num_preferred_types == 1:
-            alloc[preferred_types[0]] = 100.0
-
-        else:
-            if risk == "low":
-                weights = np.random.dirichlet(np.ones(num_preferred_types) * 3)
-            elif risk == "medium":
-                weights = np.random.dirichlet(np.ones(num_preferred_types) * 2)
-            else:
-                weights = np.random.dirichlet(np.ones(num_preferred_types) * 1.5)
-
-            for i, t in enumerate(preferred_types):
-                alloc[t] = weights[i] * 100
-
-        # 🔒 HARD NORMALIZATION (ADD THIS)
-        total_alloc = sum(alloc.values())
-        if total_alloc > 0:
-            for k in alloc:
-                alloc[k] = (alloc[k] / total_alloc) * 100
-
-        # -------- Save Row --------
+        # -------- SAVE ROW --------
         rows.append({
             "income": income,
             "amountToInvest": amount,
             "horizon": horizon,
-            "num_preferred_types": num_preferred_types,
             "risk": risk,
             "goal": goal,
             "experience": experience,
             "stock_alloc": alloc["Stocks"],
-            "sip_alloc": alloc["SIPs"],
+            "mutualfund_alloc": alloc["MutualFunds"],
             "etf_alloc": alloc["ETFs"],
             "expected_return": expected_return
         })
 
-
     return pd.DataFrame(rows)
 
+
+# =========================
+# TRAINING
+# =========================
 def train():
     df = create_synthetic_data()
 
     categorical_cols = ["risk", "goal", "experience"]
-    numeric_cols = ["income", "amountToInvest", "horizon", "num_preferred_types"]
+    numeric_cols = ["income", "amountToInvest", "horizon"]
 
+    # Encode
     label_encoders = {}
     for col in categorical_cols:
         le = LabelEncoder()
@@ -112,17 +175,17 @@ def train():
     X_scaled = scaler.fit_transform(X)
 
     y_return = df["expected_return"]
-    y_alloc = df[["stock_alloc", "sip_alloc", "etf_alloc"]]
+    y_alloc = df[["stock_alloc", "mutualfund_alloc", "etf_alloc"]]
 
     return_model = RandomForestRegressor(
-        n_estimators=160,
-        max_depth=10,
+        n_estimators=200,
+        max_depth=12,
         random_state=RANDOM_STATE
     )
 
     allocation_model = RandomForestRegressor(
-        n_estimators=160,
-        max_depth=10,
+        n_estimators=200,
+        max_depth=12,
         random_state=RANDOM_STATE
     )
 
@@ -134,7 +197,8 @@ def train():
     joblib.dump(allocation_model, f"{MODEL_DIR}/allocation_model.pkl")
     joblib.dump(label_encoders, f"{MODEL_DIR}/label_encoders.pkl")
 
-    print("✅ Training done with 100% allocation rule enforced")
+    print("Training complete with financial advisor logic")
+
 
 if __name__ == "__main__":
     train()
