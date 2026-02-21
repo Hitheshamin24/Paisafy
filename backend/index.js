@@ -30,7 +30,6 @@ const stockUniverse = require("./data/stocks");
 
 app.post("/api/recommend", async (req, res) => {
   try {
-    // Call Flask ML
     async function callFlask(payload) {
       for (let i = 0; i < 3; i++) {
         try {
@@ -45,11 +44,9 @@ app.post("/api/recommend", async (req, res) => {
     }
 
     const flaskRes = await callFlask(req.body);
-
-    console.log("Calling Flask at:", process.env.FLASK_URL);
-
     const { allocations, expected_return } = flaskRes.data;
-    const totalAmount = req.body.amountToInvest;
+
+    const totalAmount = Number(req.body.amountToInvest);
 
     let recommendations = {
       stocks: [],
@@ -57,7 +54,7 @@ app.post("/api/recommend", async (req, res) => {
       etf: [],
     };
 
-    // STOCKS
+    // ================= STOCKS =================
     if (allocations.stocks > 0) {
       const sectors = req.body.sectors || [];
       let selectedStocks = [];
@@ -68,187 +65,273 @@ app.post("/api/recommend", async (req, res) => {
         }
       });
 
-      const investAmount = (allocations.stocks / 100) * totalAmount;
-      const perStockBudget = investAmount / selectedStocks.length;
+      const investAmount = Number(
+        ((allocations.stocks / 100) * totalAmount).toFixed(2),
+      );
 
-      const stockResults = await Promise.allSettled(
+      let remaining = investAmount;
+      let results = [];
+
+      const prices = await Promise.all(
         selectedStocks.map(async (stock) => {
           const price = await getStockPrice(stock.symbol);
-          if (!price || price <= 0) return null;
-
-          const quantity = Math.floor(perStockBudget / price);
-          if (!quantity) return null;
-
-          return {
-            name: stock.name,
-            symbol: stock.symbol,
-            price: Number(price.toFixed(2)),
-            quantity,
-            amount: Number((quantity * price).toFixed(2)),
-          };
+          return { ...stock, price };
         }),
       );
 
-      recommendations.stocks = stockResults
-        .filter((r) => r.status === "fulfilled" && r.value)
-        .map((r) => r.value);
+      const validStocks = prices.filter((s) => s.price && s.price > 0);
 
-      // Fallback if nothing bought
-      if (recommendations.stocks.length === 0 && selectedStocks.length > 0) {
-        let cheapest = null;
+      if (validStocks.length > 0) {
+        const perStock = investAmount / validStocks.length;
 
-        for (const stock of selectedStocks) {
-          const price = await getStockPrice(stock.symbol);
-          if (!price) continue;
-
-          if (!cheapest || price < cheapest.price) {
-            cheapest = { ...stock, price };
-          }
-        }
-
-        if (cheapest) {
-          const qty = Math.floor(investAmount / cheapest.price);
+        for (const stock of validStocks) {
+          const qty = Math.floor(perStock / stock.price);
 
           if (qty > 0) {
-            recommendations.stocks.push({
-              name: cheapest.name,
-              symbol: cheapest.symbol,
-              price: Number(cheapest.price.toFixed(2)),
+            const amount = qty * stock.price;
+            remaining -= amount;
+
+            results.push({
+              name: stock.name,
+              symbol: stock.symbol,
+              price: Number(stock.price.toFixed(2)),
               quantity: qty,
-              amount: Number((qty * cheapest.price).toFixed(2)),
+              amount: Number(amount.toFixed(2)),
             });
           }
         }
+
+        // second pass
+        for (const stock of validStocks) {
+          if (remaining < stock.price) continue;
+
+          const qty = Math.floor(remaining / stock.price);
+
+          if (qty > 0) {
+            const amount = qty * stock.price;
+            remaining -= amount;
+
+            const existing = results.find((r) => r.symbol === stock.symbol);
+
+            if (existing) {
+              existing.quantity += qty;
+              existing.amount += amount;
+            } else {
+              results.push({
+                name: stock.name,
+                symbol: stock.symbol,
+                price: Number(stock.price.toFixed(2)),
+                quantity: qty,
+                amount: Number(amount.toFixed(2)),
+              });
+            }
+          }
+        }
+      }
+
+      recommendations.stocks = results;
+    }
+
+    // ================= MUTUAL FUNDS =================
+    // ================= MUTUAL FUNDS =================
+    if (allocations.mutualfund > 0) {
+      const fundList = mutualFundUniverse.index || [];
+
+      if (fundList.length > 0) {
+        const investAmount = Number(
+          ((allocations.mutualfund / 100) * totalAmount).toFixed(2),
+        );
+
+        const perFundRaw = investAmount / fundList.length;
+
+        // 🔥 round to nearest 500
+        const roundTo500 = (amount) => {
+          return Math.max(500, Math.round(amount / 500) * 500);
+        };
+
+        let fundResults = [];
+        let usedAmount = 0;
+
+        const results = await Promise.allSettled(
+          fundList.map(async (fund) => {
+            const nav = await getMutualFundNAV(fund.amfi);
+            if (!nav) return null;
+
+            let amount = roundTo500(perFundRaw);
+
+            return {
+              name: fund.name,
+              price: Number(nav.toFixed(2)),
+              amount,
+            };
+          }),
+        );
+
+        const validFunds = results
+          .filter((r) => r.status === "fulfilled" && r.value)
+          .map((r) => r.value);
+
+        // 🔥 Adjust total to not exceed allocation
+        for (let fund of validFunds) {
+          if (usedAmount + fund.amount > investAmount) {
+            let remaining = investAmount - usedAmount;
+
+            if (remaining >= 500) {
+              fund.amount = Math.floor(remaining / 500) * 500;
+            } else {
+              fund.amount = 0;
+            }
+          }
+
+          if (fund.amount >= 500) {
+            const units = fund.amount / fund.price;
+
+            fund.units = Number(units.toFixed(3));
+            fund.amount = Number(fund.amount.toFixed(2));
+
+            fundResults.push(fund);
+            usedAmount += fund.amount;
+          }
+        }
+
+        recommendations.mutualfund = fundResults;
       }
     }
 
-    // MUTUAL FUNDS
-    if (allocations.mutualfund > 0) {
-      const fundList = mutualFundUniverse.index;
+    // ================= ETF =================
+    if (allocations.etf > 0) {
+      const etfList = etfUniverse.index || [];
 
-      const investAmount = (allocations.mutualfund / 100) * totalAmount;
-      const perFund = investAmount / fundList.length;
-
-      const fundResults = await Promise.allSettled(
-        fundList.map(async (fund) => {
-          const nav = await getMutualFundNAV(fund.amfi);
-          if (!nav) return null;
-
-          const units = perFund / nav;
-
-          return {
-            name: fund.name,
-            price: Number(nav.toFixed(2)),
-            units: Number(units.toFixed(3)),
-            amount: Number(perFund.toFixed(2)),
-          };
-        }),
+      const investAmount = Number(
+        ((allocations.etf / 100) * totalAmount).toFixed(2),
       );
 
-      recommendations.mutualfund = fundResults
-        .filter((r) => r.status === "fulfilled" && r.value)
-        .map((r) => r.value);
-    }
+      let remaining = investAmount;
+      let results = [];
 
-    // ETFs
-    if (allocations.etf > 0) {
-      const etfList = etfUniverse.index;
-
-      const investAmount = (allocations.etf / 100) * totalAmount;
-      const perETF = investAmount / etfList.length;
-
-      const etfResults = await Promise.allSettled(
+      const prices = await Promise.all(
         etfList.map(async (etf) => {
           const price = await getStockPrice(etf.symbol);
-          if (!price) return null;
-
-          const units = Math.floor(perETF / price);
-          if (!units) return null;
-
-          return {
-            name: etf.name,
-            symbol: etf.symbol,
-            price,
-            quantity: units,
-            amount: units * price,
-          };
+          return { ...etf, price };
         }),
       );
 
-      recommendations.etf = etfResults
-        .filter((r) => r.status === "fulfilled" && r.value)
-        .map((r) => r.value);
+      const validETFs = prices.filter((e) => e.price && e.price > 0);
+
+      if (validETFs.length > 0) {
+        const perETF = investAmount / validETFs.length;
+
+        for (const etf of validETFs) {
+          const qty = Math.floor(perETF / etf.price);
+
+          if (qty > 0) {
+            const amount = qty * etf.price;
+            remaining -= amount;
+
+            results.push({
+              name: etf.name,
+              symbol: etf.symbol,
+              price: etf.price,
+              quantity: qty,
+              amount,
+            });
+          }
+        }
+
+        // second pass
+        for (const etf of validETFs) {
+          if (remaining < etf.price) continue;
+
+          const qty = Math.floor(remaining / etf.price);
+
+          if (qty > 0) {
+            const amount = qty * etf.price;
+            remaining -= amount;
+
+            const existing = results.find((r) => r.symbol === etf.symbol);
+
+            if (existing) {
+              existing.quantity += qty;
+              existing.amount += amount;
+            } else {
+              results.push({
+                name: etf.name,
+                symbol: etf.symbol,
+                price: etf.price,
+                quantity: qty,
+                amount,
+              });
+            }
+          }
+        }
+      }
+
+      recommendations.etf = results;
     }
 
-    // Final calculations
+    // ================= FINAL CALCULATION =================
 
-    const stockInvested = recommendations.stocks.reduce(
+    let stockInvested = recommendations.stocks.reduce(
       (sum, s) => sum + s.amount,
       0,
     );
-
-    const mutualFundInvested = recommendations.mutualfund.reduce(
+    let mfInvested = recommendations.mutualfund.reduce(
       (sum, s) => sum + s.amount,
       0,
     );
+    let etfInvested = recommendations.etf.reduce((sum, s) => sum + s.amount, 0);
 
-    const etfInvested = recommendations.etf.reduce(
-      (sum, s) => sum + s.amount,
-      0,
-    );
+    let totalPrincipal = stockInvested + mfInvested + etfInvested;
+    let uninvested = totalAmount - totalPrincipal;
 
-    const totalPrincipal = stockInvested + mutualFundInvested + etfInvested;
+    // 🔥 Adjust leftover
+    // 🔥 Adjust leftover (ONLY in multiples of 500)
+    if (uninvested >= 500 && recommendations.mutualfund.length > 0) {
+      const mf = recommendations.mutualfund[0];
 
-    const uninvested = totalAmount - totalPrincipal;
+      // round leftover to nearest 500
+      const extraAmount = Math.floor(uninvested / 500) * 500;
+
+      if (extraAmount >= 500) {
+        const extraUnits = extraAmount / mf.price;
+
+        mf.units += Number(extraUnits.toFixed(3));
+        mf.amount += Number(extraAmount.toFixed(2));
+
+        totalPrincipal += extraAmount;
+        uninvested -= extraAmount;
+      }
+    }
+
+    // final rounding
+    totalPrincipal = Number(totalPrincipal.toFixed(2));
+    uninvested = Number(uninvested.toFixed(2));
+
+    // ================= RETURNS =================
 
     const months = Number(req.body.horizon || 1) * 12;
-
-    const monthlyInvestment = totalPrincipal;
-
-    const annualRate = expected_return / 100;
-    const monthlyRate = annualRate / 12;
+    const monthlyRate = expected_return / 100 / 12;
 
     const futureValue =
-      monthlyInvestment *
+      totalPrincipal *
       ((Math.pow(1 + monthlyRate, months) - 1) / monthlyRate) *
       (1 + monthlyRate);
 
-    const principalOverTime = monthlyInvestment * months;
-
+    const principalOverTime = totalPrincipal * months;
     const profit = futureValue - principalOverTime;
 
     res.json({
       expected_return,
-
-      allocations: {
-        stocks: { percent: allocations.stocks },
-        mutualfund: { percent: allocations.mutualfund },
-        etf: { percent: allocations.etf },
-      },
-
+      allocations,
       recommendations,
-
       total_principal: Math.round(principalOverTime),
       profit: Math.round(profit),
       future_value: Math.round(futureValue),
-
       total_invested: Math.round(totalPrincipal),
       uninvested_amount: Math.round(uninvested),
     });
   } catch (err) {
-    console.error("===== RECOMMEND ERROR =====");
-
-    if (err.response) {
-      console.error("URL:", err.config?.url);
-      console.error("STATUS:", err.response.status);
-      console.error("HEADERS:", err.response.headers);
-      console.error("DATA:", err.response.data);
-    } else {
-      console.error("NO RESPONSE ERROR:", err.message);
-    }
-
-    console.error("===========================");
-
+    console.error(err);
     res.status(500).json({ error: "Failed to get recommendation" });
   }
 });

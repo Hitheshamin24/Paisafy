@@ -491,19 +491,28 @@ function Form() {
                         {[
                           {
                             label: "Stocks",
-                            value: result.allocations?.stocks?.percent || 0,
+                            value:
+                              result.allocations?.stocks?.percent ??
+                              result.allocations?.stocks ??
+                              0,
                             color:
                               "bg-gradient-to-r from-lime-500 to-green-600",
                           },
                           {
                             label: "ETFs",
-                            value: result.allocations?.etf?.percent || 0,
+                            value:
+                              result.allocations?.etf?.percent ??
+                              result.allocations?.etf ??
+                              0,
                             color:
                               "bg-gradient-to-r from-green-500 to-lime-500",
                           },
                           {
                             label: "Mutual Funds",
-                            value: result.allocations?.mutualfund?.percent || 0,
+                            value:
+                              result.allocations?.mutualfund?.percent ??
+                              result.allocations?.mutualfund ??
+                              0,
                             color:
                               "bg-gradient-to-r from-green-600 to-lime-600",
                           },
@@ -616,7 +625,7 @@ function Form() {
                     ))}
 
                   {activeTab === "Mutual Funds" &&
-                   result?.recommendations?.mutualfund?.map((mf, i) => (
+                    result?.recommendations?.mutualfund?.map((mf, i) => (
                       <div
                         key={i}
                         className="bg-white/95 backdrop-blur-sm rounded-xl border-l-4 border-green-600 p-4 shadow-md hover:shadow-lg transition-all duration-300 transform hover:scale-[1.01]"
@@ -651,7 +660,7 @@ function Form() {
                 <div className="mt-8 grid grid-cols-2 gap-4">
                   <div className="bg-gradient-to-r from-lime-500 to-green-600 rounded-xl p-4 text-center shadow-lg transform hover:scale-105 transition-all">
                     <p className="text-xs text-green-100 font-semibold">
-                       Total Invested
+                      Total Invested
                     </p>
                     <p className="text-lg font-bold text-white mt-1">
                       ₹ {(result.total_invested ?? 0).toLocaleString("en-IN")}
