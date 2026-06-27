@@ -11,6 +11,7 @@ import {
   ArrowRight,
   Save,
   Edit3,
+  Download,
 } from "lucide-react"; // Added icons for better look
 
 function Form() {
@@ -111,6 +112,35 @@ function Form() {
     } catch (error) {
       console.error(error);
       alert("Failed to save recommendation");
+    }
+  };
+
+  const handleFetchRecommendation = async () => {
+    if (!user) return;
+    try {
+      const token = await getToken();
+      const res = await axios.get(
+        `${import.meta.env.VITE_BACKEND_URL}/api/fetch-recommendation/${user.id}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      if (res.data && res.data.recommendation) {
+        const fetchedResult = res.data.recommendation.result;
+        
+        // Backward compatibility: map 'sip' to 'mutualfund' for older saved records
+        if (fetchedResult?.allocations?.sip) {
+          fetchedResult.allocations.mutualfund = fetchedResult.allocations.sip;
+        }
+        if (fetchedResult?.recommendations?.sip) {
+          fetchedResult.recommendations.mutualfund = fetchedResult.recommendations.sip;
+        }
+
+        setFormData(res.data.recommendation.formData);
+        setResult(fetchedResult);
+        alert("Previous recommendation loaded successfully!");
+      }
+    } catch (err) {
+      console.error("Error fetching recommendation:", err);
+      alert("Failed to fetch previous recommendation");
     }
   };
 
@@ -256,6 +286,19 @@ function Form() {
                 Fill the form below to get tailored investment insights.
               </p>
             </div>
+
+            {recommendationExists && (
+              <div className="mb-6 flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleFetchRecommendation}
+                  className="group relative overflow-hidden bg-white text-lime-600 font-bold py-2 px-6 rounded-xl shadow-md border border-lime-200 transition-all duration-300 hover:shadow-lg hover:border-lime-400 hover:-translate-y-0.5 active:scale-95 flex items-center gap-2"
+                >
+                  <Download className="w-4 h-4 group-hover:animate-bounce" />
+                  Fetch Previous Recommendation
+                </button>
+              </div>
+            )}
 
             <form
               className="grid grid-cols-1 md:grid-cols-2 gap-4"

@@ -144,7 +144,7 @@ app.post("/api/recommend", async (req, res) => {
 
         const perFundRaw = investAmount / fundList.length;
 
-        // 🔥 round to nearest 500
+        // round to nearest 500
         const roundTo500 = (amount) => {
           return Math.max(500, Math.round(amount / 500) * 500);
         };

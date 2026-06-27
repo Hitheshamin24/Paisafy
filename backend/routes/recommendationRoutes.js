@@ -49,4 +49,23 @@ router.get(
     }
   }
 );
+
+// Fetch a recommendation for the logged in user
+router.get(
+  "/fetch-recommendation/:userId",
+  ClerkExpressRequireAuth(),
+  async (req, res) => {
+    try {
+      const { userId } = req.params; 
+      const recommendation = await Recommendation.findOne({ userId });
+      if (!recommendation) {
+        return res.status(404).json({ message: "No previous recommendation found" });
+      }
+      res.json({ recommendation }); 
+    } catch (error) {
+      console.error("Error fetching recommendation:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  }
+);
 module.exports = router;
