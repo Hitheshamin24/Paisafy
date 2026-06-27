@@ -1,71 +1,24 @@
 const express = require("express");
 const router = express.Router();
-const Recommendation = require("../models/Recommendation");
 const { ClerkExpressRequireAuth } = require("@clerk/clerk-sdk-node");
 
-// Save or update recommendation 
-router.post(
-  "/save-recommendation",
-  ClerkExpressRequireAuth(),
-  async (req, res) => {
-    try {
-      const { userId } = req.auth; 
-      const { formData, result } = req.body;
+const {
+  generateRecommendation,
+  saveRecommendation,
+  checkRecommendation,
+  fetchRecommendation,
+} = require("../controllers/recommendationController");
 
-      if (!formData || !result) {
-        return res.status(400).json({ message: "Missing formData or result" });
-      }
+// Generate recommendation (previously in index.js)
+router.post("/recommend", generateRecommendation);
 
-      // Find existing recommendation for this user and update it or create new if none exists
-      const updatedRecommendation = await Recommendation.findOneAndUpdate(
-        { userId },
-        { formData, result },
-        { new: true, upsert: true } 
-      );
-
-      res.status(200).json({
-        message: "Recommendation saved/updated successfully!",
-        recommendation: updatedRecommendation,
-      });
-    } catch (error) {
-      console.error("Error saving/updating recommendation:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
+// Save or update recommendation
+router.post("/save-recommendation", ClerkExpressRequireAuth(), saveRecommendation);
 
 // Check if a recommendation exists for the logged in user
-router.get(
-  "/check-recommendation/:userId",
-  ClerkExpressRequireAuth(),
-  async (req, res) => {
-    try {
-      const { userId } = req.params; 
-      const recommendation = await Recommendation.findOne({ userId });
-      res.json({ exists: !!recommendation }); 
-    } catch (error) {
-      console.error("Error checking recommendation:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
+router.get("/check-recommendation/:userId", ClerkExpressRequireAuth(), checkRecommendation);
 
 // Fetch a recommendation for the logged in user
-router.get(
-  "/fetch-recommendation/:userId",
-  ClerkExpressRequireAuth(),
-  async (req, res) => {
-    try {
-      const { userId } = req.params; 
-      const recommendation = await Recommendation.findOne({ userId });
-      if (!recommendation) {
-        return res.status(404).json({ message: "No previous recommendation found" });
-      }
-      res.json({ recommendation }); 
-    } catch (error) {
-      console.error("Error fetching recommendation:", error);
-      res.status(500).json({ message: "Server error" });
-    }
-  }
-);
+router.get("/fetch-recommendation/:userId", ClerkExpressRequireAuth(), fetchRecommendation);
+
 module.exports = router;
