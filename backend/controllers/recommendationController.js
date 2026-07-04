@@ -314,7 +314,7 @@ const generateRecommendation = async (req, res) => {
 
 const saveRecommendation = async (req, res) => {
   try {
-    const { userId } = req.auth;
+    const { userId } = req.auth();
     const { formData, result } = req.body;
 
     if (!formData || !result) {

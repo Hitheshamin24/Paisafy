@@ -1,12 +1,13 @@
-const { clerkClient } = require("@clerk/clerk-sdk-node");
+const { clerkClient } = require("@clerk/express");
 const User = require("../models/User");
 
 const handleUserAuth = async (req, res) => {
-  if (!req.auth || !req.auth.userId) {
+  const authData = req.auth();
+  if (!authData || !authData.userId) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const userId = req.auth.userId;
+  const userId = authData.userId;
 
   try {
     const clerkUser = await clerkClient.users.getUser(userId);
