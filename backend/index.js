@@ -6,14 +6,31 @@ const axios = require("axios");
 const connectDB = require("./config/db");
 const User = require("./models/User");
 
-const app = express();
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS
-    ? process.env.ALLOWED_ORIGINS.split(",")
-    : ["http://localhost:5173"],
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.ALLOWED_ORIGINS
+      ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+      : ["http://localhost:5173"];
+
+    // Allow requests with no origin (Postman, mobile apps, server-to-server)
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS: " + origin));
+    }
+  },
   credentials: true,
-}));
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+const app = express();
+
+// Handle preflight OPTIONS requests for ALL routes
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 app.use(express.json());
+
 
 app.get("/health", (req, res) => {
   res.json({ status: "ok" });
