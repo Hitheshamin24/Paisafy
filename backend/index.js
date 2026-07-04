@@ -26,8 +26,8 @@ const corsOptions = {
 
 const app = express();
 
-// Handle preflight OPTIONS requests for ALL routes
-app.options("*", cors(corsOptions));
+// Handle preflight OPTIONS requests for ALL routes (Express 5 syntax)
+app.options("/*path", cors(corsOptions));
 app.use(cors(corsOptions));
 app.use(express.json());
 
