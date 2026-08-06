@@ -13,13 +13,11 @@ N_SAMPLES = 7000
 
 INVESTMENT_TYPES = ["Stocks", "MutualFunds", "ETFs"]
 
-# =========================
-# SMART FINANCIAL ADVISOR
-# =========================
+# Smart financial advisor
 def get_base_allocation(risk, horizon, goal, experience):
     alloc = {"Stocks": 0.0, "MutualFunds": 0.0, "ETFs": 0.0}
 
-    # ===== RISK BASE =====
+    # Risk base
     if risk == "low":
         alloc["MutualFunds"] = 60
         alloc["ETFs"] = 30
@@ -35,7 +33,7 @@ def get_base_allocation(risk, horizon, goal, experience):
         alloc["MutualFunds"] = 20
         alloc["ETFs"] = 10
 
-    # ===== HORIZON ADJUSTMENT =====
+   # Horizon adjustment
     if horizon >= 10:
         alloc["Stocks"] += 10
         alloc["MutualFunds"] += 5
@@ -46,7 +44,6 @@ def get_base_allocation(risk, horizon, goal, experience):
         alloc["Stocks"] -= 15
         alloc["MutualFunds"] -= 5
 
-    # ===== GOAL ADJUSTMENT =====
     if goal == "Retirement":
         alloc["MutualFunds"] += 10
         alloc["Stocks"] += 5
@@ -58,7 +55,6 @@ def get_base_allocation(risk, horizon, goal, experience):
         alloc["ETFs"] += 15
         alloc["Stocks"] += 5
 
-    # ===== EXPERIENCE ADJUSTMENT =====
     if experience == "Beginner":
         alloc["MutualFunds"] += 10
         alloc["Stocks"] -= 10
@@ -70,7 +66,6 @@ def get_base_allocation(risk, horizon, goal, experience):
 
 
 def normalize_allocation(alloc):
-    # Ensure no negative values
     for k in alloc:
         alloc[k] = max(0, alloc[k])
 
@@ -85,9 +80,7 @@ def normalize_allocation(alloc):
     return alloc
 
 
-# =========================
-# DATA GENERATION
-# =========================
+# Data generation
 def create_synthetic_data(n_samples=N_SAMPLES):
     np.random.seed(RANDOM_STATE)
     rows = []
@@ -110,18 +103,18 @@ def create_synthetic_data(n_samples=N_SAMPLES):
             "Expert"
         ])
 
-        # -------- BASE ALLOCATION --------
+        # Base allocation
         alloc = get_base_allocation(risk, horizon, goal, experience)
 
-        # -------- ADD NOISE (REALISM) --------
+        # Add noise (realism)
         for k in alloc:
             noise = np.random.normal(0, 5)
             alloc[k] += noise
 
-        # -------- NORMALIZE --------
+        # Normalize
         alloc = normalize_allocation(alloc)
 
-        # -------- EXPECTED RETURN --------
+        # Expected return
         base_return = {"low": 8, "medium": 12, "high": 18}[risk]
 
         horizon_bonus = min(horizon * 0.5, 5)
@@ -136,7 +129,7 @@ def create_synthetic_data(n_samples=N_SAMPLES):
         expected_return += np.random.normal(0, 1.0)
         expected_return = np.clip(expected_return, 5, 25)
 
-        # -------- SAVE ROW --------
+        # Save row
         rows.append({
             "income": income,
             "amountToInvest": amount,
@@ -153,9 +146,7 @@ def create_synthetic_data(n_samples=N_SAMPLES):
     return pd.DataFrame(rows)
 
 
-# =========================
-# TRAINING
-# =========================
+# Training
 def train():
     df = create_synthetic_data()
 

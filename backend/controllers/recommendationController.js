@@ -34,7 +34,7 @@ const generateRecommendation = async (req, res) => {
       etf: [],
     };
 
-    // ================= STOCKS =================
+    // Stocks
     if (allocations.stocks > 0) {
       const sectors = req.body.sectors || [];
       let selectedStocks = [];
@@ -112,7 +112,7 @@ const generateRecommendation = async (req, res) => {
       recommendations.stocks = results;
     }
 
-    // ================= MUTUAL FUNDS =================
+    // Mutual Funds
     if (allocations.mutualfund > 0) {
       const fundList = mutualFundUniverse.index || [];
 
@@ -150,7 +150,7 @@ const generateRecommendation = async (req, res) => {
           .filter((r) => r.status === "fulfilled" && r.value)
           .map((r) => r.value);
 
-        // 🔥 Adjust total to not exceed allocation
+        // Adjust total to not exceed allocation
         for (let fund of validFunds) {
           if (usedAmount + fund.amount > investAmount) {
             let remaining = investAmount - usedAmount;
@@ -177,7 +177,7 @@ const generateRecommendation = async (req, res) => {
       }
     }
 
-    // ================= ETF =================
+    // ETF
     if (allocations.etf > 0) {
       const etfList = etfUniverse.index || [];
 
@@ -248,7 +248,7 @@ const generateRecommendation = async (req, res) => {
       recommendations.etf = results;
     }
 
-    // ================= FINAL CALCULATION =================
+    // Final Calculation
     let stockInvested = recommendations.stocks.reduce(
       (sum, s) => sum + s.amount,
       0
@@ -262,7 +262,7 @@ const generateRecommendation = async (req, res) => {
     let totalPrincipal = stockInvested + mfInvested + etfInvested;
     let uninvested = totalAmount - totalPrincipal;
 
-    // 🔥 Adjust leftover
+    //  Adjust leftover
     if (uninvested >= 500 && recommendations.mutualfund.length > 0) {
       const mf = recommendations.mutualfund[0];
 
@@ -284,7 +284,7 @@ const generateRecommendation = async (req, res) => {
     totalPrincipal = Number(totalPrincipal.toFixed(2));
     uninvested = Number(uninvested.toFixed(2));
 
-    // ================= RETURNS =================
+    // Returns
     const months = Number(req.body.horizon || 1) * 12;
     const monthlyRate = expected_return / 100 / 12;
 

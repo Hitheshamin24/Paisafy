@@ -8,23 +8,17 @@ alloc_model = joblib.load(f"{MODEL_DIR}/allocation_model.pkl")
 encoders = joblib.load(f"{MODEL_DIR}/label_encoders.pkl")
 
 
-# =========================
-# SAFE ENCODER
-# =========================
+# Safe encoder
 def safe_encode(encoder, value):
     if value in encoder.classes_:
         return encoder.transform([value])[0]
     return encoder.transform([encoder.classes_[0]])[0]
 
 
-# =========================
-# MAIN PREDICTION FUNCTION
-# =========================
+# Main prediction function
 def predict_allocations(data):
 
-    # ---------------------------
     # 1. Build feature vector
-    # ---------------------------
     features = [
         data["income"],
         data["amountToInvest"],
@@ -36,22 +30,16 @@ def predict_allocations(data):
 
     X = scaler.transform([features])
 
-    # ---------------------------
     # 2. ML predictions
-    # ---------------------------
     expected_return = float(return_model.predict(X)[0])
     stock, mutualfund, etf = alloc_model.predict(X)[0]
 
-    # ---------------------------
     # 3. Clean negative values
-    # ---------------------------
     stock = max(stock, 0)
     mutualfund = max(mutualfund, 0)
     etf = max(etf, 0)
 
-    # ---------------------------
     # 4. Apply preferred types
-    # ---------------------------
     preferred = set(data.get("preferredTypes", []))
 
     alloc = {
@@ -60,7 +48,7 @@ def predict_allocations(data):
         "etf": etf if "ETFs" in preferred else 0,
     }
 
-    # If nothing selected → allow all
+    # If nothing selected, allow all
     if not preferred:
         alloc = {
             "stocks": stock,
@@ -70,9 +58,7 @@ def predict_allocations(data):
 
     total = sum(alloc.values())
 
-    # ---------------------------
     # 5. Force EXACT 100%
-    # ---------------------------
     if total == 0:
         # fallback
         allocations = {
@@ -87,9 +73,7 @@ def predict_allocations(data):
             "etf": round(alloc["etf"] / total * 100, 2),
         }
 
-    # ---------------------------
     # 6. Return response
-    # ---------------------------
     return {
         "expected_return": round(expected_return, 2),
         "allocations": allocations

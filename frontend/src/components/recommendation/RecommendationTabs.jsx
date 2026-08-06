@@ -7,7 +7,7 @@ function RecommendationTabs({ result }) {
 
   return (
     <>
-      {/* === Tabs === */}
+      {/* Tabs */}
       <div className="flex justify-center gap-3 mt-6">
         {["Stocks", "ETFs", "Mutual Funds"].map((tab) => (
           <button

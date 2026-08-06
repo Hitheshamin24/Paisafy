@@ -24,7 +24,7 @@ function InvestmentSummary({ result }) {
         </div>
       </div>
 
-      {/* === Premium Investment Summary Container === */}
+      {/* Premium Investment Summary Container */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
