@@ -18,6 +18,8 @@ import RecommendationForm from "../components/recommendation/RecommendationForm"
 import PortfolioAllocation from "../components/recommendation/PortfolioAllocation";
 import RecommendationTabs from "../components/recommendation/RecommendationTabs";
 import InvestmentSummary from "../components/recommendation/InvestmentSummary";
+import ExplanationCard from "../components/recommendation/ExplanationCard";
+import ForecastChart from "../components/recommendation/ForecastChart";
 
 function Form() {
   const [formData, setFormData] = useState({
@@ -333,9 +335,13 @@ function Form() {
                   getActualInvested={getActualInvested} 
                 />
 
+                <ExplanationCard explanations={result.explanation} />
+
                 <RecommendationTabs result={result} />
 
                 <InvestmentSummary result={result} />
+
+                <ForecastChart forecast={result.forecast} horizon={Number(formData.horizon)} />
 
                 {/* Save Recommendation Button */}
                 <div className="mt-8 mb-4">

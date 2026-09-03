@@ -10,10 +10,11 @@ const { getStockPrice } = require("../services/priceServices");
 
 const generateRecommendation = async (req, res) => {
   try {
-    async function callFlask(payload) {
+    // Retries up to 3 times before giving up on a Flask call
+    async function callFlask(endpoint, payload) {
       for (let i = 0; i < 3; i++) {
         try {
-          return await axios.post(`${process.env.FLASK_URL}/predict`, payload, {
+          return await axios.post(`${process.env.FLASK_URL}${endpoint}`, payload, {
             timeout: 60000,
           });
         } catch (err) {
@@ -23,7 +24,7 @@ const generateRecommendation = async (req, res) => {
       }
     }
 
-    const flaskRes = await callFlask(req.body);
+    const flaskRes = await callFlask("/predict", req.body);
     const { allocations, expected_return } = flaskRes.data;
 
     const totalAmount = Number(req.body.amountToInvest);
@@ -39,11 +40,18 @@ const generateRecommendation = async (req, res) => {
       const sectors = req.body.sectors || [];
       let selectedStocks = [];
 
-      sectors.forEach((sector) => {
-        if (stockUniverse[sector]) {
-          selectedStocks.push(...stockUniverse[sector]);
-        }
-      });
+      if (sectors.length > 0) {
+        sectors.forEach((sector) => {
+          if (stockUniverse[sector]) {
+            selectedStocks.push(...stockUniverse[sector]);
+          }
+        });
+      }
+
+      // No sectors chosen, so use everything available
+      if (selectedStocks.length === 0) {
+        selectedStocks = Object.values(stockUniverse).flat();
+      }
 
       const investAmount = Number(
         ((allocations.stocks / 100) * totalAmount).toFixed(2)
@@ -81,7 +89,7 @@ const generateRecommendation = async (req, res) => {
           }
         }
 
-        // second pass
+        // Spend any leftover cash that didn't fit in the first pass
         for (const stock of validStocks) {
           if (remaining < stock.price) continue;
 
@@ -123,7 +131,7 @@ const generateRecommendation = async (req, res) => {
 
         const perFundRaw = investAmount / fundList.length;
 
-        // round to nearest 500
+        // Mutual funds have a minimum SIP of ₹500
         const roundTo500 = (amount) => {
           return Math.max(500, Math.round(amount / 500) * 500);
         };
@@ -150,7 +158,7 @@ const generateRecommendation = async (req, res) => {
           .filter((r) => r.status === "fulfilled" && r.value)
           .map((r) => r.value);
 
-        // Adjust total to not exceed allocation
+        // Trim amounts so the total stays within the allocated budget
         for (let fund of validFunds) {
           if (usedAmount + fund.amount > investAmount) {
             let remaining = investAmount - usedAmount;
@@ -177,7 +185,7 @@ const generateRecommendation = async (req, res) => {
       }
     }
 
-    // ETF
+    // ETFs
     if (allocations.etf > 0) {
       const etfList = etfUniverse.index || [];
 
@@ -217,7 +225,7 @@ const generateRecommendation = async (req, res) => {
           }
         }
 
-        // second pass
+        // Same second pass as stocks to use up any leftover
         for (const etf of validETFs) {
           if (remaining < etf.price) continue;
 
@@ -248,25 +256,17 @@ const generateRecommendation = async (req, res) => {
       recommendations.etf = results;
     }
 
-    // Final Calculation
-    let stockInvested = recommendations.stocks.reduce(
-      (sum, s) => sum + s.amount,
-      0
-    );
-    let mfInvested = recommendations.mutualfund.reduce(
-      (sum, s) => sum + s.amount,
-      0
-    );
+    // Tally up what actually got invested
+    let stockInvested = recommendations.stocks.reduce((sum, s) => sum + s.amount, 0);
+    let mfInvested = recommendations.mutualfund.reduce((sum, s) => sum + s.amount, 0);
     let etfInvested = recommendations.etf.reduce((sum, s) => sum + s.amount, 0);
 
     let totalPrincipal = stockInvested + mfInvested + etfInvested;
     let uninvested = totalAmount - totalPrincipal;
 
-    //  Adjust leftover
+    // If there's at least ₹500 left over, add it to the first mutual fund
     if (uninvested >= 500 && recommendations.mutualfund.length > 0) {
       const mf = recommendations.mutualfund[0];
-
-      // round leftover to nearest 500
       const extraAmount = Math.floor(uninvested / 500) * 500;
 
       if (extraAmount >= 500) {
@@ -280,11 +280,10 @@ const generateRecommendation = async (req, res) => {
       }
     }
 
-    // final rounding
     totalPrincipal = Number(totalPrincipal.toFixed(2));
     uninvested = Number(uninvested.toFixed(2));
 
-    // Returns
+    // Simple SIP future value formula
     const months = Number(req.body.horizon || 1) * 12;
     const monthlyRate = expected_return / 100 / 12;
 
@@ -296,6 +295,26 @@ const generateRecommendation = async (req, res) => {
     const principalOverTime = totalPrincipal * months;
     const profit = futureValue - principalOverTime;
 
+    // Run SHAP explanations and Monte Carlo in parallel — a failure in either won't break the response
+    const [explainResult, forecastResult] = await Promise.allSettled([
+      callFlask("/explain", req.body),
+      callFlask("/forecast", {
+        principal: totalPrincipal,
+        expected_return,
+        horizon: Number(req.body.horizon || 1),
+      }),
+    ]);
+
+    const explanation =
+      explainResult.status === "fulfilled"
+        ? explainResult.value.data.drivers
+        : [];
+
+    const forecast =
+      forecastResult.status === "fulfilled"
+        ? forecastResult.value.data
+        : null;
+
     res.json({
       expected_return,
       allocations,
@@ -305,6 +324,8 @@ const generateRecommendation = async (req, res) => {
       future_value: Math.round(futureValue),
       total_invested: Math.round(totalPrincipal),
       uninvested_amount: Math.round(uninvested),
+      explanation,
+      forecast,
     });
   } catch (err) {
     console.error(err);

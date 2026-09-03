@@ -9,8 +9,11 @@ const {
   fetchRecommendation,
 } = require("../controllers/recommendationController");
 
-// Generate recommendation (previously in index.js)
-router.post("/recommend", generateRecommendation);
+const { recommendSchema, validate } = require("../validators/recommendationValidator");
+const { getCacheStats } = require("../services/cacheService");
+
+// Generate recommendation — validated by Zod before reaching the controller
+router.post("/recommend", validate(recommendSchema), generateRecommendation);
 
 // Save or update recommendation
 router.post("/save-recommendation", requireAuth(), saveRecommendation);
@@ -21,5 +24,11 @@ router.get("/check-recommendation/:userId", requireAuth(), checkRecommendation);
 // Fetch a recommendation for the logged in user
 router.get("/fetch-recommendation/:userId", requireAuth(), fetchRecommendation);
 
+// Dev-only: inspect cache hit/miss stats
+router.get("/cache/stats", (req, res) => {
+  res.json(getCacheStats());
+});
+
 module.exports = router;
+
 
