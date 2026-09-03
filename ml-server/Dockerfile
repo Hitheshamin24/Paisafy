@@ -17,7 +17,8 @@ RUN pip install --no-cache-dir \
     numpy==2.2.6 \
     pandas==2.3.3 \
     scikit-learn==1.8.0 \
-    scipy==1.17.0
+    scipy==1.17.0 \
+    shap
 
 # Copy the rest of the application
 COPY . .
